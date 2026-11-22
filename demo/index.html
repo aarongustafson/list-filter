@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>&lt;list-filter&gt; Web Component Demo</title>
+		<link rel="stylesheet" href="./demo-shell.css" />
+		<link rel="stylesheet" href="./styles.css" />
+	</head>
+	<body data-demo-page="full" data-syntax-theme="github">
+		<a class="skip-link" href="#main">Skip to examples</a>
+		<header>
+			<p class="eyebrow">Web component / Examples</p>
+			<h1>&lt;list-filter&gt;</h1>
+			<p class="lede">
+				Progressively filter native lists with light-DOM search and category controls. See the
+				<a
+					href="https://github.com/aarongustafson/list-filter/blob/main/README.md"
+					>README</a
+				>
+				for installation and API documentation.
+			</p>
+			<nav aria-label="Component resources">
+				<a
+					href="https://github.com/aarongustafson/list-filter/blob/main/README.md"
+					>Read the README</a
+				>
+				<a href="https://github.com/aarongustafson/list-filter"
+					>View on GitHub</a
+				>
+				<a href="./esm.html">esm.sh example</a>
+				<a href="./unpkg.html">unpkg example</a>
+			</nav>
+		</header>
+
+		<main id="main" tabindex="-1">
+			<p
+				id="microlighter-status"
+				class="enhancement-status"
+				role="status"
+				hidden
+				data-loading-message="Loading optional code highlighting and Copy controls."
+				data-failure-message="MicroLighter could not load. Code remains readable and selectable; the component loads independently."
+				data-theme-failure-message="Code highlighting and Copy controls are available, but the syntax theme could not load. The component loads independently."
+			></p>
+
+			<!-- Basic Example -->
+			<section>
+				<h2>Basic Example</h2>
+				<p>A simple demonstration of the component.</p>
+
+				<div class="demo-section">
+					<h3>Basic Usage</h3>
+					<p>Description of this example.</p>
+					<div class="code-demo-pair">
+						<micro-lighter
+							class="code-panel"
+							language="html"
+							controls="copy"
+							data-label="HTML"
+						>
+							<pre
+								aria-label="Basic Usage code 1"
+								tabindex="0"
+							><code><mark>&lt;list-filter&gt;</mark>
+  &lt;p&gt;Content goes here&lt;/p&gt;
+<mark>&lt;/list-filter&gt;</mark></code></pre>
+						</micro-lighter>
+						<div class="demo" data-demo-label="Live example">
+							<list-filter>
+								<p>Content goes here</p>
+							</list-filter>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Example with Attributes -->
+			<section>
+				<h2>Example with Attributes</h2>
+				<p>Demonstrating component attributes.</p>
+
+				<div class="demo-section">
+					<h3>Using Attributes</h3>
+					<p>Description of this example with attributes.</p>
+					<div class="code-demo-pair">
+						<micro-lighter
+							class="code-panel"
+							language="html"
+							controls="copy"
+							data-label="HTML"
+						>
+							<pre
+								aria-label="Using Attributes code 2"
+								tabindex="0"
+							><code><mark>&lt;list-filter example-attribute="value"&gt;</mark>
+  &lt;p&gt;Content with attributes&lt;/p&gt;
+<mark>&lt;/list-filter&gt;</mark></code></pre>
+						</micro-lighter>
+						<div class="demo" data-demo-label="Live example">
+							<list-filter example-attribute="value">
+								<p>Content with attributes</p>
+							</list-filter>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- API Reference -->
+			<section class="api-reference">
+				<h2>API Reference</h2>
+				<p>
+					For complete documentation of attributes, events, and
+					browser support, see the
+					<a
+						href="https://github.com/aarongustafson/list-filter/blob/main/README.md"
+						>README</a
+					>.
+				</p>
+			</section>
+		</main>
+
+		<footer>
+			<p>
+				Made with ❤️ by
+				<a href="https://github.com/aarongustafson">Aaron Gustafson</a>.
+				View the source on
+				<a href="https://github.com/aarongustafson/list-filter"
+					>GitHub</a
+				>.
+			</p>
+		</footer>
+
+		<script src="../define.js" type="module"></script>
+		<script type="module" src="./code-examples.js"></script>
+	</body>
+</html>

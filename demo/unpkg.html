@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>list-filter via unpkg</title>
+		<link rel="stylesheet" href="./demo-shell.css" />
+		<link rel="stylesheet" href="./styles.css" />
+	</head>
+	<body data-demo-page="full" data-syntax-theme="github">
+		<a class="skip-link" href="#main">Skip to examples</a>
+		<header>
+			<h1>unpkg CDN sanity check</h1>
+			<p>
+				This page loads the guarded definition helper from
+				<code>unpkg</code> and registers the element when supported.
+			</p>
+		</header>
+		<main id="main" tabindex="-1">
+			<p
+				id="microlighter-status"
+				class="enhancement-status"
+				role="status"
+				hidden
+				data-loading-message="Loading optional code highlighting and Copy controls."
+				data-failure-message="MicroLighter could not load. Code remains readable and selectable; the component loads independently."
+				data-theme-failure-message="Code highlighting and Copy controls are available, but the syntax theme could not load. The component loads independently."
+			></p>
+
+			<section class="demo-section">
+				<h2>Import and call the registration helper</h2>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Import and call the registration helper code 1"
+							tabindex="0"
+						><code>&lt;script type="module"&gt;
+  <mark>import { defineComponentName } from
+    'https://unpkg.com/@aarongustafson/list-filter@latest/define.js?module';</mark>
+  <mark>defineComponentName();</mark>
+&lt;/script&gt;
+
+<mark>&lt;list-filter&gt;</mark>
+  &lt;p&gt;Replace this markup once you customize list-filter.&lt;/p&gt;
+<mark>&lt;/list-filter&gt;</mark></code></pre>
+					</micro-lighter>
+					<div class="demo" data-demo-label="Live example">
+						<list-filter>
+							<p>
+								Replace this markup once you customize
+								list-filter.
+							</p>
+						</list-filter>
+					</div>
+				</div>
+			</section>
+		</main>
+		<footer>
+			<p>
+				Made with ❤️ by
+				<a href="https://github.com/aarongustafson">Aaron Gustafson</a>.
+			</p>
+		</footer>
+
+		<script type="module">
+			import { defineComponentName } from 'https://unpkg.com/@aarongustafson/list-filter@latest/define.js?module';
+
+			defineComponentName();
+		</script>
+		<script type="module" src="./code-examples.js"></script>
+	</body>
+</html>
