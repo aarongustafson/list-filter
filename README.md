@@ -98,7 +98,9 @@ The output initializes with the number currently shown and updates immediately.
 labels, the singular English default is "1 item".
 
 Plural selection follows `Intl.PluralRules` with the inherited language:
-`zero`, `one`, `two`, `few`, `many`, or `other`. Missing variants fall back to
+`zero`, `one`, `two`, `few`, `many`, or `other`. Language lookup crosses authored
+shadow hosts, and the nearest `lang` wins. An empty `lang` uses the component’s
+English fallback. Missing variants fall back to
 `output-label`, then the built-in labels. Override all generated English
 strings for a translated interface:
 
@@ -213,7 +215,9 @@ move focus. If an item containing focus is hidden, focus moves to the first
 usable control in search, category, reset order. Disabled controls, including
 those disabled by an enclosing fieldset, are skipped. If none can receive focus,
 focus moves to the list. Configuration changes rebuild controls and restore
-control focus where possible, using the same fallback. Focus recovery also works
+control focus where possible, using the same fallback for extra focusable template
+content. If an update listener removes or replaces the enhancement, refresh
+does not attempt to focus its discarded controls. Focus recovery also works
 when the component and list share an authored shadow-root tree; the component
 itself still uses light DOM. Supply visible empty-state guidance alongside the
 list if the count alone is insufficient.

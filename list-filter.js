@@ -204,10 +204,17 @@ export class ListFilterElement extends HTMLElement {
 				);
 			}
 		}
-		const language =
-			this.closest('[lang]')?.getAttribute('lang') ||
-			this.ownerDocument.documentElement.lang ||
-			'en';
+		let language = 'en';
+		for (
+			let ancestor = this;
+			ancestor;
+			ancestor = ancestor.parentElement ?? ancestor.getRootNode().host
+		) {
+			if (ancestor.hasAttribute('lang')) {
+				language = ancestor.getAttribute('lang') || 'en';
+				break;
+			}
+		}
 		let plurals;
 		try {
 			plurals = new Intl.PluralRules(language);
@@ -247,6 +254,7 @@ export class ListFilterElement extends HTMLElement {
 						category: this._ui.categories?.value ?? '',
 					}
 				: null;
+		const restoreFocus = this._ui?.wrapper.contains(root.activeElement);
 		const focusedRef =
 			this._ui &&
 			Object.entries(this._ui).find(
@@ -303,9 +311,15 @@ export class ListFilterElement extends HTMLElement {
 				? selected
 				: '';
 		}
+		const appliedUI = this._ui;
 		this._apply(previous ? 'refresh' : 'init');
-		if (focusedRef && rebuild) {
-			this._recoverFocus(this._ui[focusedRef]);
+		if (
+			restoreFocus &&
+			rebuild &&
+			this.isConnected &&
+			this._ui === appliedUI
+		) {
+			this._recoverFocus(appliedUI[focusedRef]);
 		}
 		return true;
 	}

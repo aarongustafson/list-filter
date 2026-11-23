@@ -37,6 +37,23 @@ afterEach(() => {
 });
 
 describe('list-filter', () => {
+	it('completes refresh when its change listener removes the rebuilt component', async () => {
+		const element = await mount();
+		search(element, 'cake');
+		element.querySelector('input').focus();
+		element.setAttribute('search-label', 'Words');
+		element.addEventListener('list-filter:change', () => element.remove(), {
+			once: true,
+		});
+		expect(() => element.refresh()).not.toThrow();
+		expect(element.isConnected).toBe(false);
+		expect(document.querySelector('#items > li').hidden).toBe(false);
+		await tick();
+		expect(
+			element.querySelector('[data-list-filter-generated]'),
+		).toBeNull();
+	});
+
 	it('tracks repeated external hide and unhide cycles without excluding visible items', async () => {
 		const element = await mount();
 		const item = document.querySelector('#items > li');

@@ -5,6 +5,64 @@ import {
 	expectNativeFocus,
 } from './demo-fixture.js';
 
+test('inherits plural language through nested shadow hosts and honors local overrides', async ({
+	page,
+}) => {
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	await page.evaluate(() => {
+		const host = document.createElement('div');
+		host.lang = 'pl';
+		const outer = host.attachShadow({ mode: 'open' });
+		const innerHost = document.createElement('div');
+		outer.append(innerHost);
+		const inner = innerHost.attachShadow({ mode: 'open' });
+		inner.innerHTML = `<list-filter id="plural-filter" for="plural-items"
+			output-label-few="{count} few" output-label-other="{count} other"></list-filter>
+			<ul id="plural-items"><li>One</li><li>Two</li><li>Three</li></ul>`;
+		document.body.append(host);
+	});
+	const filter = page.locator('#plural-filter');
+	await expect(filter.locator('output')).toHaveText('3 few');
+	await filter.evaluate((element) => {
+		element.lang = 'en';
+	});
+	await expect(filter.locator('output')).toHaveText('3 other');
+});
+
+test('recovers focus from extra template content and tolerates removal during refresh', async ({
+	page,
+}) => {
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	const filter = page.locator('list-filter[for="fruit"]');
+	await filter.evaluate((element) => {
+		const help = document.createElement('a');
+		help.href = '#help';
+		help.textContent = 'Help with fruit';
+		element.querySelector('template').content.append(help);
+		element.refresh();
+	});
+	await filter.getByRole('link', { name: 'Help with fruit' }).focus();
+	await filter.evaluate((element) => {
+		element.setAttribute('search-label', 'Words');
+	});
+	await expect(filter.getByRole('searchbox')).toBeFocused();
+	expect(
+		await filter.evaluate((element) => {
+			element.addEventListener(
+				'list-filter:change',
+				() => element.remove(),
+				{ once: true },
+			);
+			element.setAttribute('search-label', 'New words');
+			return element.refresh();
+		}),
+	).toBe(true);
+	await expect(page.locator('#fruit')).toBeVisible();
+	await expect(filter).toHaveCount(0);
+});
+
 test('recovers list and control focus within a shadow-root tree', async ({
 	page,
 }) => {
