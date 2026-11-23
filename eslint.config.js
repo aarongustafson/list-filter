@@ -5,6 +5,15 @@ export default [
 	...eslintConfig,
 	eslintConfigPrettier,
 	{
+		files: ['share-card/capture.mjs'],
+		rules: {
+			'import-x/no-extraneous-dependencies': [
+				'error',
+				{ devDependencies: true },
+			],
+		},
+	},
+	{
 		ignores: [
 			'node_modules/**',
 			'coverage/**',

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>List filtering share card</title>
+		<link rel="icon" href="data:," />
+		<link rel="stylesheet" href="/share-card/styles.css" />
+		<script type="module" src="/define.js"></script>
+	</head>
+	<body>
+		<main aria-label="Reading list before and after category filtering">
+			<section aria-label="All resources">
+				<list-filter
+					for="all-resources"
+					categories
+					title="Reading list"
+					categories-label="By topic"
+					reset-label="Reset"
+					output-label="{count} resources"
+					announce="off"
+				></list-filter>
+				<ul id="all-resources">
+					<li data-category="CSS">CSS layout essentials</li>
+					<li data-category="CSS">CSS color reference</li>
+					<li data-category="HTML">HTML forms guide</li>
+					<li data-category="JavaScript">Progressive enhancement</li>
+				</ul>
+			</section>
+			<section aria-label="CSS resources">
+				<list-filter
+					for="filtered-resources"
+					categories
+					title="Reading list"
+					categories-label="By topic"
+					reset-label="Reset"
+					output-label="{count} resources"
+					announce="off"
+				></list-filter>
+				<ul id="filtered-resources">
+					<li data-category="CSS">CSS layout essentials</li>
+					<li data-category="CSS">CSS color reference</li>
+					<li data-category="HTML">HTML forms guide</li>
+					<li data-category="JavaScript">Progressive enhancement</li>
+				</ul>
+			</section>
+		</main>
+	</body>
+</html>
