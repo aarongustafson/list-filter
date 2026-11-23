@@ -13,7 +13,9 @@
 			<h1>esm.sh CDN sanity check</h1>
 			<p>
 				This page loads the component class from <code>esm.sh</code> and
-				registers it manually.
+				registers it manually. The package is not published yet; until
+				then, the original list remains available without filter
+				controls. <a href="../README.md">Read the README</a>.
 			</p>
 		</header>
 		<main id="main" tabindex="-1">
@@ -48,17 +50,18 @@
   }
 &lt;/script&gt;
 
-<mark>&lt;list-filter&gt;</mark>
-  &lt;p&gt;Replace this markup once you customize list-filter.&lt;/p&gt;
-<mark>&lt;/list-filter&gt;</mark></code></pre>
+<mark>&lt;list-filter for="drinks" search&gt;&lt;/list-filter&gt;</mark>
+&lt;ul id="drinks"&gt;
+  &lt;li&gt;Lemon tea&lt;/li&gt;
+  &lt;li&gt;Sparkling water&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
 					</micro-lighter>
 					<div class="demo" data-demo-label="Live example">
-						<list-filter>
-							<p>
-								Replace this markup once you customize
-								list-filter.
-							</p>
-						</list-filter>
+						<list-filter for="drinks" search></list-filter>
+						<ul id="drinks">
+							<li>Lemon tea</li>
+							<li>Sparkling water</li>
+						</ul>
 					</div>
 				</div>
 			</section>

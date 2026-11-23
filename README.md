@@ -6,130 +6,253 @@
 [![License](https://img.shields.io/npm/l/@aarongustafson/list-filter)](https://github.com/aarongustafson/list-filter/blob/main/LICENSE)
 [![Type definitions](https://img.shields.io/npm/types/@aarongustafson/list-filter)](https://github.com/aarongustafson/list-filter/blob/main/list-filter.d.ts)
 
-Progressively filter native lists with light-DOM search and category controls.
+`<list-filter>` adds a search field, a category dropdown, or both to an authored list. It filters
+only direct `ol > li`, `ul > li`, or `dl > div` children, using `[hidden]` without
+removing or reordering content. Controls and list content stay in light DOM.
+Without JavaScript, the original list remains usable.
 
-## Demo
+This is an initial development version, not an npm release. CDN examples will
+not load the component until the package is published. No runtime dependencies
+are required.
 
-[Live Demo](https://aarongustafson.github.io/list-filter/demo/) ([Source](./demo/index.html))
+## Installation and registration
 
-Additional demos:
-
-- [ESM CDN Demo](https://aarongustafson.github.io/list-filter/demo/esm.html) ([Source](./demo/esm.html))
-- [Unpkg CDN Demo](https://aarongustafson.github.io/list-filter/demo/unpkg.html) ([Source](./demo/unpkg.html))
-
-## Installation
-
-```bash
-npm install @aarongustafson/list-filter
-```
-
-## Usage
-
-### Option 1: Auto-define the custom element (easiest)
-
-Import the registration module to define the `<list-filter>` custom element:
-
-```javascript
-import '@aarongustafson/list-filter/define.js';
-```
-
-Or use the define-only script in HTML:
+For local development, import the checked-out registration module:
 
 ```html
-<script
-	src="./node_modules/@aarongustafson/list-filter/define.js"
-	type="module"
-></script>
+<script type="module" src="./list-filter/define.js"></script>
+<list-filter for="drinks" search categories></list-filter>
+<ul id="drinks">
+  <li data-category="cold">Sparkling water</li>
+  <li data-category="hot">Lemon tea</li>
+  <li data-category="cold">Lemonade</li>
+</ul>
 ```
 
-### Option 2: Import the class and define manually
+After publication, install `@aarongustafson/list-filter` and import
+`@aarongustafson/list-filter/define.js`. That module registers the element
+automatically and exports the guarded `defineListFilter()` helper.
 
-Import the class and define the custom element with your preferred tag name:
+The package root and `list-filter.js` export only the class. Neither registers
+the element:
 
-The package root and the component module are class-only imports; neither
-registers an element automatically.
-
-```javascript
-import { ListFilterElement } from '@aarongustafson/list-filter/list-filter.js';
-
-customElements.define('my-custom-name', ListFilterElement);
+```js
+import { ListFilterElement } from './list-filter.js';
+customElements.define('list-filter', ListFilterElement);
 ```
 
-### Basic Example
+## Filtering behavior
+
+- `for` references one native list by ID in the same document or tree.
+  Nested list items are never independently hidden; their text contributes to
+  their containing direct item's search text.
+- Search uses `textContent.toLowerCase()` and a literal substring match.
+  It includes hidden descendant text, preserves whitespace, and does not
+  interpret regular expressions, trim input, fold accents, or correct typos.
+  `search="fuzzy"` and other nonempty modes report an error rather than changing
+  matching behavior.
+- Search and category filters combine with AND. An empty search matches all
+  eligible items; the selectable first category option clears only category.
+- Categories are exact, case-sensitive `data-category` values. Duplicate values
+  appear once, in first-occurrence order. Missing and empty values have no
+  option but remain visible when category is cleared. Unmapped values use their
+  raw text. Labels from `categories-map` are inserted as text, never HTML.
+- Items already carrying `[hidden]`, including `hidden="until-found"`, are
+  excluded from counts and category discovery. Reset does not reveal them.
+- Only one filter can own a list at a time. Unsupported direct children are
+  left untouched. Individual `dt` and `dd` children are not filter items; wrap
+  each definition group in a direct `div`.
+
+## Generated markup and configuration
+
+By default, the component generates a fieldset, legend, optional labeled search
+and category fields, a reset button, and an output. Controls wrap in an inline
+flex row, with labels above fields and the button aligned at block-end.
+The reset button has `type="button"` and never resets an enclosing form.
+
+| Attribute                 | Default              | Purpose                                    |
+| ------------------------- | -------------------- | ------------------------------------------ |
+| `for`                     | Required             | Associated list ID                         |
+| `search`                  | Absent               | Empty attribute enables search             |
+| `categories`              | Absent               | Presence enables categories                |
+| `title`                   | `Filter this list`   | Generated legend                           |
+| `search-label`            | `By search term`     | Generated search label                     |
+| `search-placeholder`      | Absent               | Optional search placeholder                |
+| `categories-label`        | `By category`        | Generated select label                     |
+| `categories-placeholder`  | `All`                | Selectable no-filter option label          |
+| `categories-map`          | `{}`                 | JSON object of raw values to string labels |
+| `reset-label`             | `Reset filters`      | Generated button label                     |
+| `output-label`            | `{count} items`      | Base count template                        |
+| `output-label-{category}` | Base template        | Plural-specific count template             |
+| `announce`                | `polite`             | `polite` or `off` announcements            |
+| `lang`                    | Inherited, then `en` | Language for plural selection              |
+
+Labels configure generated controls. A template supplies its own legend,
+control labels, search placeholder, and reset text; category option labels and
+count messages still use the component attributes.
+
+### Count labels and translation
+
+The output initializes with the number currently shown and updates immediately.
+`{count}` is replaced in `output-label` and any plural overrides. Without custom
+labels, the singular English default is "1 item".
+
+Plural selection follows `Intl.PluralRules` with the inherited language:
+`zero`, `one`, `two`, `few`, `many`, or `other`. Missing variants fall back to
+`output-label`, then the built-in labels. Override all generated English
+strings for a translated interface:
 
 ```html
-<list-filter>
-	<!-- Your content here -->
+<list-filter
+  for="boissons"
+  search
+  categories
+  lang="fr"
+  title="Filtrer les boissons"
+  search-label="Par terme"
+  categories-label="Par catégorie"
+  categories-placeholder="Toutes"
+  categories-map='{"cold":"Froides","hot":"Chaudes"}'
+  reset-label="Réinitialiser"
+  output-label="{count} boissons"
+  output-label-one="{count} boisson"
+></list-filter>
+```
+
+Use `output-label-other` for an explicit `other` override. Invalid language tags
+or category-map JSON report errors instead of silently choosing another API.
+
+## Authored templates
+
+Supply one direct-child `<template>` to replace generated controls. The component
+clones its contents into light DOM and leaves the template source untouched.
+Refs are scoped to that clone, so outside controls cannot be wired accidentally.
+
+```html
+<list-filter for="drinks" search categories>
+  <template>
+    <fieldset>
+      <legend>Find a drink</legend>
+      <label>
+        Search drinks
+        <input type="search" data-list-filter-ref="search" />
+      </label>
+      <label>
+        Temperature
+        <select data-list-filter-ref="categories"></select>
+      </label>
+      <button type="button" data-list-filter-ref="reset">Clear</button>
+      <output data-list-filter-ref="output"></output>
+    </fieldset>
+  </template>
 </list-filter>
 ```
 
-## Attributes
+Provide exactly one reset button and one output. Provide exactly one search
+input when `search` is enabled, and exactly one select when `categories` is
+enabled; omit their refs otherwise. Invalid or duplicate refs fail before
+filtering begins. The component replaces select options and output text in the
+clone. Initial template search values are applied on initialization.
 
-| Attribute           | Type     | Default | Description                  |
-| ------------------- | -------- | ------- | ---------------------------- |
-| `example-attribute` | `string` | absent  | Description of the attribute |
+Authors supply accessible labels, unique IDs where used, and useful reading and
+keyboard order. Treat templates as trusted authored markup, not sanitized HTML:
+do not construct them from untrusted strings. Native form submission behavior
+for authored control names remains the author's responsibility.
 
-## Behavior and styling
+## Properties, methods, and events
 
-The component preserves authored light-DOM children. Native content remains
-available before registration and if JavaScript fails. Rendering and reconnection
-don’t replace children or reset entered values.
+`htmlFor` reflects `for`; assigning `null` or `undefined` removes it.
+`search` and `categories` are boolean presence properties. These properties
+also work when assigned before definition. Other options use attributes.
 
-The `exampleAttribute` property reflects `example-attribute` and returns `null`
-when the attribute is absent. Assigning `null` or `undefined` removes the
-attribute. Properties assigned before definition are upgraded on connection.
+- `refresh(): boolean` validates configuration, rescans current list text and
+  categories, and reapplies active filters. Call it after structural, text,
+  `data-category`, template-content, or inherited-language changes. There is no
+  MutationObserver. Existing controls and focus are preserved when configuration
+  and template identity have not changed. Call while connected.
+- `reset(): boolean` clears this component's filters. Call after initialization.
+- Both methods return `false` on a reported error and `true` on success.
 
-`render()` initializes enhancement without replacing authored content. The starter
-doesn’t add roles, tab stops, events, or CSS custom properties. It schedules no
-background work and installs no listeners that need disconnection cleanup.
+`list-filter:change` bubbles and is composed. Each update emits fresh detail:
 
-Document styles apply directly. If you give the element a display style, preserve
-the native `hidden` behavior:
-
-```css
-list-filter {
-	display: block;
-}
-
-list-filter[hidden] {
-	display: none;
-}
+```js
+document
+  .querySelector('list-filter')
+  .addEventListener(
+    'list-filter:change',
+    ({ detail: { reason, search, category, shown, total } }) => {
+      console.log(reason, search, category, shown, total);
+    },
+  );
 ```
 
-## Browser Support
+`reason` is `init`, `refresh`, `search`, `category`, or `reset`. Counts exclude
+authored hidden items. Register initialization listeners before connecting or
+registering the element.
 
-This component uses modern web standards:
+`list-filter:error` also bubbles and is composed, with `{ code, message }`.
+Codes cover invalid list references, list ownership, unsupported search modes,
+announcement settings, JSON maps, language tags, templates, and calls made
+before the component is ready. Errors log to `console.error`, remove enhancement
+controls, and restore component-owned list visibility. No visible message is
+inserted for a missing reference. Applications can use the event for recovery;
+fix configuration and call `refresh()`.
+Attribute changes schedule a retry automatically.
 
-- Custom Elements v1
-- ES Modules
+## Accessibility, styling, and lifecycle
 
-For older browsers, you may need polyfills.
+Visible count text updates immediately. Its `<output>` uses `aria-live="off"` to
+avoid duplicate announcements. A separate visually hidden `role="status"` region
+announces changes politely after a 300ms typing pause, and immediately for
+category changes and reset. Initialization is not announced. Use `announce="off"`
+when an application supplies its own announcements. These semantics need
+browser/screen-reader verification; automated tests do not establish conformance.
 
-## Development
+Native controls retain keyboard behavior and labels. Filtering does not normally
+move focus. If an item containing focus is hidden, focus moves to the first
+enabled filter control, or reset. Configuration changes rebuild controls and
+restore control focus where possible. Supply visible empty-state guidance
+alongside the list if the count alone is insufficient.
+If invalid configuration removes a focused control, focus returns to the original
+list when it is still connected, without changing its authored tab order. A list
+without `tabindex` receives `tabindex="-1"` until focus leaves or the component
+cleans up; existing tabindex values are preserved.
 
-```bash
-# Install dependencies
-npm install
+Style light-DOM descendants with `[data-list-filter-controls]` and
+`[data-list-filter-ref="search"]`, `"categories"`, `"reset"`, or `"output"`.
+`--list-filter-gap` sets the generated row gap, defaulting to `1rem`. Template
+layouts receive no generated layout styles. Preserve `[hidden]` behavior in
+list styling; do not override it with unconditional display rules.
 
-# Run tests
-npm test
+Disconnection cancels announcements, removes generated clones/listeners, releases
+ownership, and restores hidden attributes changed by the component. Reconnection
+starts from template defaults. Externally changed hidden attributes are preserved
+when their current value differs from the last component-written value. Identical
+external writes cannot be distinguished: coordinate visibility through one owner.
+Removed items regain component-owned visibility on the next refresh.
 
-# Run tests with coverage
-npm run test:coverage
+Filtering scans cached text once per item per update; DOM text is read only
+during refresh. Category options are deduplicated. Very large lists should be
+profiled in the application's browsers before adoption. Unchanged visibility
+does not trigger another hidden-attribute write.
 
-# Install browser engines and check demo colors, focus, and layout
-npx playwright install chromium firefox webkit
-npm run test:browser
+## Demos and development
 
-# Lint code
+- [Local examples](demo/index.html): search, category mapping, translated
+  definitions, authored templates, and invalid-reference recovery.
+- [esm.sh](demo/esm.html) and [unpkg](demo/unpkg.html): post-publication imports,
+  with useful native lists if loading fails.
+
+```sh
+npm ci
+npm run test:run
+npm run test:types
 npm run lint
-
-# Format code
-npm run format
-
-# View demo
-open demo/index.html
+npm run test:browser
 ```
+
+Keep the existing `version` and `postversion` scripts and publishing workflows.
+No release, version bump, or npm publication is part of this implementation.
 
 ## License
 

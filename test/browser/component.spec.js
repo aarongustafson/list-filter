@@ -1,116 +1,336 @@
-import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
+import {
+	serveDemo,
+	expectPairLayout,
+	expectNativeFocus,
+} from './demo-fixture.js';
 
-const source = await readFile(
-	new URL('../../list-filter.js', import.meta.url),
-	'utf8',
-);
-const definition = await readFile(
-	new URL('../../define.js', import.meta.url),
-	'utf8',
-);
-const entry = await readFile(
-	new URL('../../index.js', import.meta.url),
-	'utf8',
-);
-const { name } = JSON.parse(
-	await readFile(new URL('../../package.json', import.meta.url), 'utf8'),
-);
-const tag = name.split('/').pop().toLowerCase();
-const markup = `<!doctype html><html lang="en"><title>Enhancement contract</title>
-	<form><${tag}>
-		<label for="name">Name</label><input id="name" name="name">
-	</${tag}></form></html>`;
-
-test('preserves native form content, focus, and pre-definition properties during upgrade', async ({
+test('supports native keyboard filtering, reset, and template controls', async ({
 	page,
 }) => {
-	await page.route('http://starter.test/**', (route) =>
-		route.fulfill({
-			contentType: route.request().url().endsWith('.js')
-				? 'text/javascript'
-				: 'text/html',
-			body: route.request().url().endsWith('/define.js')
-				? definition
-				: route.request().url().endsWith('/index.js')
-					? entry
-					: route.request().url().endsWith('.js')
-						? source
-						: markup,
-		}),
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	const drinks = page.locator('list-filter[for="drinks"]');
+	const search = drinks.getByRole('searchbox', { name: 'By search term' });
+	await search.focus();
+	await page.keyboard.type('LEMON');
+	await expect(page.locator('#drinks > li:not([hidden])')).toHaveCount(2);
+	await page.keyboard.press('Tab');
+	await expect(
+		drinks.getByRole('combobox', { name: 'By category' }),
+	).toBeFocused();
+	await drinks.getByRole('combobox').selectOption('hot');
+	await expect(page.locator('#drinks > li:not([hidden])')).toHaveCount(1);
+	await expect(drinks.locator('output')).toHaveText('1 item');
+	// Safari's default keyboard navigation reaches buttons with Option+Tab.
+	await page.keyboard.press(
+		test.info().project.name === 'webkit' ? 'Alt+Tab' : 'Tab',
 	);
-	await page.goto('http://starter.test/');
-	const field = page.getByRole('textbox', { name: 'Name', exact: true });
-	await field.fill('Entered before upgrade');
-	await page.locator(tag).evaluate((element) => {
-		element.exampleAttribute = 'early-value';
-	});
+	await expect(
+		drinks.getByRole('button', { name: 'Reset filters' }),
+	).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(search).toHaveValue('');
+	await expect(page.locator('#drinks > li:not([hidden])')).toHaveCount(3);
+	await search.fill('not in this list');
+	await expect(drinks.locator('output')).toHaveText('0 items');
+	await expect(drinks.locator('[role="status"]')).toHaveText('0 items');
 
-	expect(
-		await page.evaluate(async (elementName) => {
-			const moduleURL = new URL('/index.js', location.href).href;
-			const { ListFilterElement } = await import(moduleURL);
-			return {
-				exportedClass: typeof ListFilterElement,
-				registered: Boolean(customElements.get(elementName)),
-			};
-		}, tag),
-	).toEqual({ exportedClass: 'function', registered: false });
-
-	await page.evaluate(async (elementName) => {
-		const moduleURL = new URL('/define.js', location.href).href;
-		await import(moduleURL);
-		await customElements.whenDefined(elementName);
-	}, tag);
-
-	await expect(field).toBeFocused();
-	await expect(field).toHaveValue('Entered before upgrade');
-	await expect(page.locator(tag)).toHaveAttribute(
-		'example-attribute',
-		'early-value',
-	);
-	expect(
-		await page.locator(tag).evaluate((element) => ({
-			hasShadow: element.shadowRoot !== null,
-			shadowsProperty: Object.hasOwn(element, 'exampleAttribute'),
-			value: new FormData(element.closest('form')).get('name'),
-		})),
-	).toEqual({
-		hasShadow: false,
-		shadowsProperty: false,
-		value: 'Entered before upgrade',
-	});
-
-	await page.locator(tag).evaluate((element) => {
-		element.render();
-		element.remove();
-		document.querySelector('form').appendChild(element);
-		element.exampleAttribute = 'after-reconnection';
-	});
-	await expect(field).toHaveValue('Entered before upgrade');
-	await expect(page.locator(tag)).toHaveAttribute(
-		'example-attribute',
-		'after-reconnection',
-	);
-	await page.locator(tag).evaluate((element) => {
-		element.hidden = true;
-	});
-	await expect(field).toBeHidden();
+	const fruit = page.locator('list-filter[for="fruit"]');
+	await fruit.getByRole('searchbox', { name: 'Fruit name' }).fill('PEAR');
+	await expect(page.locator('#fruit > li:not([hidden])')).toHaveText('Pear');
+	await fruit.getByRole('button', { name: 'Clear' }).click();
+	await expect(page.locator('#fruit > li:not([hidden])')).toHaveCount(2);
 });
 
-test('keeps the authored field usable without JavaScript', async ({
-	browser,
+test('introduces category-only controls with raw keys before mapped labels and combined filters', async ({
+	page,
 }) => {
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	const raw = page.locator('list-filter[for="raw-drinks"]');
+	const mapped = page.locator('list-filter[for="mapped-drinks"]');
+	await expect(raw.getByRole('combobox')).toBeVisible();
+	await expect(mapped.getByRole('combobox')).toBeVisible();
+	for (const filter of [raw, mapped]) {
+		await expect(filter.getByRole('searchbox')).toHaveCount(0);
+	}
+	expect(await raw.locator('option').allTextContents()).toEqual([
+		'All',
+		'cold',
+		'hot',
+	]);
+	expect(await mapped.locator('option').allTextContents()).toEqual([
+		'All',
+		'Cold drinks',
+		'Hot drinks',
+	]);
+	const order = await page
+		.locator('list-filter')
+		.evaluateAll((filters) =>
+			filters.map((filter) => filter.getAttribute('for')),
+		);
+	expect(order.indexOf('raw-drinks')).toBeLessThan(
+		order.indexOf('mapped-drinks'),
+	);
+	expect(order.indexOf('mapped-drinks')).toBeLessThan(
+		order.indexOf('drinks'),
+	);
+	await raw.getByRole('combobox').selectOption('cold');
+	await expect(page.locator('#raw-drinks > li:not([hidden])')).toHaveCount(2);
+	await mapped.getByRole('combobox').selectOption({ label: 'Hot drinks' });
+	await expect(page.locator('#mapped-drinks > li:not([hidden])')).toHaveText(
+		'Lemon tea',
+	);
+	await raw.getByRole('combobox').selectOption('');
+	await expect(page.locator('#raw-drinks > li:not([hidden])')).toHaveCount(3);
+});
+
+test('upgrades without registration side effects, form resets, or lost focus', async ({
+	page,
+}) => {
+	const markup = `<!doctype html><html lang="en"><title>Upgrade contract</title>
+		<form><label>Name <input name="name"></label>
+		<list-filter></list-filter></form>
+		<ul id="items"><li><a href="#detail">Apple</a></li><li>Pear</li></ul></html>`;
+	await serveDemo(page, { transformHtml: () => markup });
+	await page.goto('http://code-demo.test/demo/index.html');
+	const name = page.getByRole('textbox', { name: 'Name', exact: true });
+	await name.fill('Preserved input');
+	await page.locator('list-filter').evaluate((element) => {
+		element.htmlFor = 'items';
+		element.search = true;
+	});
+	expect(
+		await page.evaluate(async () => {
+			const { ListFilterElement } = await import(
+				new URL('../index.js', location.href).href
+			);
+			return {
+				exportedClass: typeof ListFilterElement,
+				registered: !!customElements.get('list-filter'),
+			};
+		}),
+	).toEqual({ exportedClass: 'function', registered: false });
+	await page.evaluate(async () => {
+		await import(new URL('../define.js', location.href).href);
+		await customElements.whenDefined('list-filter');
+	});
+	await expect(name).toBeFocused();
+	await expect(name).toHaveValue('Preserved input');
+	const filter = page.locator('list-filter');
+	const search = filter.getByRole('searchbox');
+	await search.fill('pear');
+	await filter.getByRole('button').click();
+	await expect(name).toHaveValue('Preserved input');
+	expect(
+		await filter.evaluate((element) => ({
+			hasShadow: element.shadowRoot !== null,
+			shadowsProperty: Object.hasOwn(element, 'htmlFor'),
+		})),
+	).toEqual({ hasShadow: false, shadowsProperty: false });
+
+	await page.getByRole('link', { name: 'Apple' }).focus();
+	await filter.evaluate((element) => {
+		element.querySelector('input').value = 'pear';
+		element.querySelector('input').dispatchEvent(new Event('input'));
+	});
+	await expect(search).toBeFocused();
+	await expect(
+		page.getByRole('link', { name: 'Apple', includeHidden: true }),
+	).toBeHidden();
+	await filter.evaluate((element) => {
+		element.remove();
+		document.querySelector('form').append(element);
+	});
+	await expect(page.getByRole('link', { name: 'Apple' })).toBeVisible();
+	await expect(name).toHaveValue('Preserved input');
+	await filter.getByRole('searchbox').focus();
+	await filter.evaluate((element) => {
+		element.htmlFor = 'missing';
+	});
+	await expect(page.locator('#items')).toBeFocused();
+	await expect(page.locator('#items')).toHaveAttribute('tabindex', '-1');
+	await name.focus();
+	await expect(page.locator('#items')).not.toHaveAttribute('tabindex');
+});
+
+test('keeps definitions grouped and omits filter UI for missing references', async ({
+	page,
+}) => {
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	const french = page.locator('list-filter[for="glossary"]');
+	await french
+		.getByRole('combobox', { name: 'Par catégorie' })
+		.selectOption('css');
+	await expect(page.locator('#glossary > div:not([hidden])')).toHaveCount(1);
+	await expect(page.locator('#glossary > div[hidden] dt')).toBeHidden();
+	await expect(page.locator('#glossary > div[hidden] dd')).toBeHidden();
+	await expect(french.locator('output')).toHaveText('1 terme');
+	const recoveryExample = page.locator('.demo').filter({
+		has: page.locator('#recovery'),
+	});
+	await expect(recoveryExample.getByRole('alert')).toHaveCount(0);
+	await expect(recoveryExample.getByRole('status')).toHaveCount(0);
+	await expect(page.locator('#recovery fieldset')).toHaveCount(0);
+	await page
+		.getByRole('button', { name: 'Correct the list reference' })
+		.click();
+	await expect(
+		page.locator('#recovery').getByRole('searchbox'),
+	).toBeVisible();
+	await expect(page.locator('#recovery-list')).toBeVisible();
+});
+
+test('retains useful native lists without JavaScript', async ({ browser }) => {
 	const context = await browser.newContext({ javaScriptEnabled: false });
 	try {
 		const page = await context.newPage();
-		await page.setContent(markup);
-		await page.keyboard.press('Tab');
-		const field = page.getByRole('textbox', { name: 'Name', exact: true });
-		await expect(field).toBeFocused();
-		await field.fill('Native fallback');
-		await expect(field).toHaveValue('Native fallback');
+		await serveDemo(page);
+		await page.goto('http://code-demo.test/demo/index.html');
+		await expect(page.locator('#reading > li')).toHaveCount(3);
+		await expect(
+			page.getByRole('link', { name: 'CSS reference', exact: true }),
+		).toBeVisible();
+		await expect(page.locator('#drinks > li')).toHaveCount(3);
+		await expect(page.locator('#glossary > div')).toHaveCount(2);
+		await expect(page.locator('#fruit')).toBeVisible();
+		await expect(page.getByRole('searchbox')).toHaveCount(0);
 	} finally {
 		await context.close();
 	}
+});
+
+test('keeps generated and authored controls usable at narrow widths and in forced colors', async ({
+	page,
+}) => {
+	await page.emulateMedia({ forcedColors: 'active' });
+	await page.setViewportSize({ width: 320, height: 800 });
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	for (const pair of await page.locator('.code-demo-pair').all()) {
+		await expectPairLayout(pair, 320);
+	}
+	for (const control of await page
+		.locator('list-filter input, list-filter select, list-filter button')
+		.all()) {
+		await expectNativeFocus(control);
+	}
+	expect(
+		await page
+			.locator('list-filter[for="drinks"]')
+			.getByRole('group')
+			.ariaSnapshot(),
+	).toContain('Find a drink');
+});
+
+test('filters a realistic large list using cached text and publishes accurate counts', async ({
+	page,
+}) => {
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	const result = await page
+		.locator('list-filter[for="reading"]')
+		.evaluate((element) => {
+			const list = document.getElementById('reading');
+			const fragment = document.createDocumentFragment();
+			for (let index = 0; index < 2000; index++) {
+				const item = document.createElement('li');
+				item.textContent = `Resource ${index} ${index % 2 ? 'HTML' : 'CSS'}`;
+				fragment.append(item);
+			}
+			list.replaceChildren(fragment);
+			element.refresh();
+			const start = performance.now();
+			element.querySelector('input').value = 'CSS';
+			element.querySelector('input').dispatchEvent(new Event('input'));
+			return {
+				elapsed: performance.now() - start,
+				shown: list.querySelectorAll(':scope > li:not([hidden])')
+					.length,
+				count: element.querySelector('output').textContent,
+			};
+		});
+	expect(result.shown).toBe(1000);
+	expect(result.count).toBe('1000 items');
+	test.info().annotations.push({
+		type: 'filter-duration',
+		description: `${result.elapsed.toFixed(2)}ms for 2,000 items`,
+	});
+});
+
+for (const colorScheme of ['light', 'dark']) {
+	test(`${colorScheme}: demo filter controls share typography and height at normal and enlarged text sizes`, async ({
+		page,
+	}) => {
+		await page.emulateMedia({ colorScheme });
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await serveDemo(page);
+		await page.goto('http://code-demo.test/demo/index.html');
+		await expect(
+			page.locator('list-filter[for="drinks"] input'),
+		).toBeVisible();
+		for (const fontSize of [16, 24]) {
+			await page.evaluate((size) => {
+				document.documentElement.style.fontSize = `${size}px`;
+			}, fontSize);
+			const sizes = await page
+				.locator(
+					'list-filter input, list-filter select, list-filter button',
+				)
+				.evaluateAll((controls) =>
+					controls.map((control) => {
+						const css = getComputedStyle(control);
+						return {
+							tag: control.tagName,
+							fontSize: parseFloat(css.fontSize),
+							lineHeight: parseFloat(css.lineHeight),
+							height: control.getBoundingClientRect().height,
+						};
+					}),
+				);
+			expect(sizes.length).toBeGreaterThan(3);
+			for (const size of sizes) {
+				expect(size.fontSize).toBe(fontSize);
+				if (size.tag !== 'SELECT') {
+					expect(size.lineHeight).toBeCloseTo(fontSize * 1.4, 1);
+				}
+				expect(size.height).toBeCloseTo(
+					fontSize * 1.4 + fontSize * 0.5 + 2,
+					1,
+				);
+				expect(
+					Math.abs(size.height - sizes[0].height),
+				).toBeLessThanOrEqual(0.5);
+			}
+		}
+	});
+}
+
+test('authored template fields and reset align above their result count', async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	const fruit = page.locator('list-filter[for="fruit"]');
+	await expect(fruit.getByRole('searchbox')).toBeVisible();
+	await fruit.scrollIntoViewIfNeeded();
+	const layout = await fruit.evaluate((element) => {
+		const input = element.querySelector('input').getBoundingClientRect();
+		const button = element.querySelector('button').getBoundingClientRect();
+		const output = element.querySelector('output').getBoundingClientRect();
+		return {
+			inputBottom: input.bottom,
+			buttonBottom: button.bottom,
+			outputTop: output.top,
+		};
+	});
+	expect(
+		Math.abs(layout.inputBottom - layout.buttonBottom),
+	).toBeLessThanOrEqual(0.5);
+	expect(layout.outputTop).toBeGreaterThanOrEqual(
+		Math.max(layout.inputBottom, layout.buttonBottom),
+	);
 });

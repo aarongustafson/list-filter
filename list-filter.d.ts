@@ -1,60 +1,51 @@
-/**
- * ListFilterElement - Progressively filter native lists with light-DOM search and category controls.
- *
- * @element list-filter
- *
- * @attr {string} example-attribute - Description of the attribute
- *
- */
+export interface ListFilterChangeDetail {
+	reason: 'init' | 'refresh' | 'search' | 'category' | 'reset';
+	search: string;
+	category: string;
+	shown: number;
+	total: number;
+}
+
+export interface ListFilterErrorDetail {
+	code:
+		| 'disconnected'
+		| 'invalid-list'
+		| 'list-owned'
+		| 'invalid-search'
+		| 'invalid-announce'
+		| 'invalid-categories-map'
+		| 'invalid-language'
+		| 'invalid-template'
+		| 'not-ready';
+	message: string;
+}
+
+/** Light-DOM controls for filtering direct native list children. */
 export class ListFilterElement extends HTMLElement {
-	/**
-	 * List of attributes to observe for changes
-	 */
 	static readonly observedAttributes: string[];
-
-	/**
-	 * Internal state and flags
-	 */
-	private readonly _internals: {
-		isRendered: boolean;
-	};
-
-	constructor();
-
-	/**
-	 * Called when the element is connected to the DOM
-	 */
+	get htmlFor(): string;
+	set htmlFor(value: string | null | undefined);
+	search: boolean;
+	categories: boolean;
 	connectedCallback(): void;
-
-	/**
-	 * Called when an observed attribute changes
-	 * @param name - The attribute name that changed
-	 * @param oldValue - The previous value
-	 * @param newValue - The new value
-	 */
+	disconnectedCallback(): void;
 	attributeChangedCallback(
 		name: string,
 		oldValue: string | null,
 		newValue: string | null,
 	): void;
+	/** Refresh list content, configuration, and options; false on reported errors. */
+	refresh(): boolean;
+	/** Clear this component's filters without resetting an enclosing form. */
+	reset(): boolean;
+}
 
-	/**
-	 * Upgrade a property to handle cases where it was set before the element upgraded.
-	 * This is especially important for framework compatibility.
-	 * @param prop - Property name to upgrade
-	 * @private
-	 */
-	private _upgradeProperty(prop: string): void;
-
-	/**
-	 * Example attribute as a property.
-	 * Reflects between property and attribute to keep them in sync.
-	 */
-	get exampleAttribute(): string | null;
-	set exampleAttribute(value: string | null | undefined);
-
-	/**
-	 * Initializes enhancement without replacing authored light-DOM content
-	 */
-	render(): void;
+declare global {
+	interface HTMLElementTagNameMap {
+		'list-filter': ListFilterElement;
+	}
+	interface HTMLElementEventMap {
+		'list-filter:change': CustomEvent<ListFilterChangeDetail>;
+		'list-filter:error': CustomEvent<ListFilterErrorDetail>;
+	}
 }
