@@ -5,6 +5,84 @@ import {
 	expectNativeFocus,
 } from './demo-fixture.js';
 
+for (const initialized of [false, true]) {
+	test(`stops refresh when a template child disconnects the filter during ${initialized ? 'rebuild' : 'initialization'}`, async ({
+		page,
+	}) => {
+		const errors = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await serveDemo(page, {
+			transformHtml: () =>
+				'<!doctype html><html lang="en"><head><title>Template lifecycle fixture</title><script type="module" src="/define.js"></script></head><body></body></html>',
+		});
+		await page.goto('http://code-demo.test/demo/index.html');
+		const result = await page.evaluate(async (initialized) => {
+			await customElements.whenDefined('list-filter');
+			customElements.define(
+				'disconnect-filter',
+				class extends HTMLElement {
+					connectedCallback() {
+						this.closest('list-filter').remove();
+					}
+				},
+			);
+			const list = document.createElement('ul');
+			list.id = 'disconnect-items';
+			list.innerHTML =
+				'<li>First</li><li>Second</li><li hidden>Private</li>';
+			const filter = document.createElement('list-filter');
+			filter.setAttribute('for', list.id);
+			filter.setAttribute('search', '');
+			document.body.append(list, filter);
+			if (initialized) {
+				filter.refresh();
+				const input = filter.querySelector('input');
+				input.value = 'First';
+				input.dispatchEvent(new Event('input'));
+			}
+			const template = document.createElement('template');
+			template.innerHTML = `
+				<label>Words <input type="search" data-list-filter-ref="search"></label>
+				<button type="button" data-list-filter-ref="reset">Reset</button>
+				<output data-list-filter-ref="output"></output>
+				<disconnect-filter></disconnect-filter>`;
+			filter.append(template);
+			const updates = [];
+			filter.addEventListener('list-filter:change', ({ detail }) =>
+				updates.push(detail),
+			);
+			const refreshed = filter.refresh();
+			const disconnected = !filter.isConnected;
+			const generated = filter.querySelector(
+				'[data-list-filter-generated]',
+			);
+			const hidden = [...list.children].map((item) => item.hidden);
+			const replacement = document.createElement('list-filter');
+			replacement.setAttribute('for', list.id);
+			document.body.append(replacement);
+			return {
+				refreshed,
+				disconnected,
+				generated: Boolean(generated),
+				hidden,
+				updates,
+				recovered: replacement.refresh(),
+				output: replacement.querySelector('output')?.textContent,
+			};
+		}, initialized);
+		expect(result).toEqual({
+			refreshed: true,
+			disconnected: true,
+			generated: false,
+			hidden: [false, false, true],
+			updates: [],
+			recovered: true,
+			output: '2 items',
+		});
+		expect(errors).toEqual([]);
+	});
+}
+
 for (const event of ['focus', 'blur']) {
 	for (const action of ['reset', 'refresh']) {
 		test(`preserves the newer result when a ${event} listener calls ${action} without replacing controls`, async ({

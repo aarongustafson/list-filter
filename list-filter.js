@@ -274,6 +274,7 @@ export class ListFilterElement extends HTMLElement {
 			this._signature = signature;
 			owners.set(list, this);
 			this.append(ui.wrapper);
+			if (!this.isConnected || this._ui !== ui) return true;
 			ui.search?.addEventListener('input', this._onSearch);
 			ui.categories?.addEventListener('change', this._onCategory);
 			ui.reset.addEventListener('click', this._onReset);

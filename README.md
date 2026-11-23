@@ -177,6 +177,9 @@ also work when assigned before definition. Other options use attributes.
   and template identity have not changed. Call while connected.
 - `reset(): boolean` clears this component's filters. Call after initialization.
 - Both methods return `false` on a reported error and `true` on success.
+  If a template child's connection callback removes the filter during insertion,
+  `refresh()` stops without throwing or emitting a change event and returns
+  `true`. Disconnection restores the list and releases its owner.
 
 `list-filter:change` bubbles and is composed. Each update emits fresh detail:
 
