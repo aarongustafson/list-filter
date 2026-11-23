@@ -5,6 +5,131 @@ import {
 	expectNativeFocus,
 } from './demo-fixture.js';
 
+for (const action of ['method', 'button']) {
+	test(`synchronizes filters after a native form reset via ${action}`, async ({
+		page,
+	}) => {
+		await serveDemo(page, {
+			transformHtml: () =>
+				'<!doctype html><script type="module" src="/define.js"></script><form id="filters"><label>Name <input name="name" value="Default"></label><list-filter for="reset-list" search categories></list-filter><button type="reset">Reset form</button></form><ul id="reset-list"><li data-category="guide">First</li><li data-category="reference">Second</li><li hidden>Private</li></ul>',
+		});
+		await page.goto('http://code-demo.test/demo/index.html');
+		const filter = page.locator('list-filter');
+		await expect(filter.locator('output')).toHaveText('2 items');
+		await page.clock.install();
+		await filter.getByRole('searchbox').fill('Second');
+		await filter.getByRole('combobox').selectOption('reference');
+		await expect(filter.locator('output')).toHaveText('1 item');
+		await page.getByRole('textbox', { name: 'Name' }).fill('Edited');
+		await filter.evaluate((element) => {
+			element.addEventListener('list-filter:change', ({ detail }) => {
+				element.latestUpdate = detail;
+			});
+		});
+		if (action === 'method')
+			await page.locator('form').evaluate((form) => form.reset());
+		else await page.getByRole('button', { name: 'Reset form' }).click();
+		await page.clock.runFor(350);
+		await expect(filter.getByRole('searchbox')).toHaveValue('');
+		await expect(filter.getByRole('combobox')).toHaveValue('');
+		await expect(filter.locator('output')).toHaveText('2 items');
+		await expect(page.locator('#reset-list > li:visible')).toHaveText([
+			'First',
+			'Second',
+		]);
+		await expect(
+			filter.locator('[data-list-filter-ref="status"]'),
+		).toHaveText('2 items');
+		expect(
+			await filter.evaluate((element) => element.latestUpdate),
+		).toEqual({
+			reason: 'reset',
+			search: '',
+			category: '',
+			shown: 2,
+			total: 2,
+		});
+		await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue(
+			'Default',
+		);
+		await page.getByRole('textbox', { name: 'Name' }).fill('Keep this');
+		await filter.getByRole('searchbox').fill('First');
+		await filter.getByRole('button').click();
+		await expect(filter.locator('output')).toHaveText('2 items');
+		await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue(
+			'Keep this',
+		);
+	});
+}
+
+test('native resets honor authored defaults and explicit form ownership', async ({
+	page,
+}) => {
+	await serveDemo(page, {
+		transformHtml: () =>
+			'<!doctype html><script type="module" src="/define.js"></script><form id="owner"></form><form id="unrelated"></form><list-filter for="default-list" search><template><label>Words <input type="search" form="owner" value="Second" data-list-filter-ref="search"></label><button type="button" data-list-filter-ref="reset">Clear</button><output form="owner" data-list-filter-ref="output"></output></template></list-filter><ul id="default-list"><li>First</li><li>Second</li></ul>',
+	});
+	await page.goto('http://code-demo.test/demo/index.html');
+	const filter = page.locator('list-filter');
+	await expect(filter.locator('output')).toHaveText('1 item');
+	await page.clock.install();
+	await filter.getByRole('searchbox').fill('First');
+	await page.locator('#unrelated').evaluate((form) => form.reset());
+	await page.clock.runFor(1);
+	await expect(filter.getByRole('searchbox')).toHaveValue('First');
+	await expect(page.locator('#default-list > li:visible')).toHaveText([
+		'First',
+	]);
+	await page.locator('#owner').evaluate((form) => form.reset());
+	await page.clock.runFor(1);
+	await expect(filter.getByRole('searchbox')).toHaveValue('Second');
+	await expect(page.locator('#default-list > li:visible')).toHaveText([
+		'Second',
+	]);
+	await expect(filter.locator('output')).toHaveText('1 item');
+});
+
+test('canceled form resets do not update filtering and pending resets stop on disconnection', async ({
+	page,
+}) => {
+	const errors = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	await serveDemo(page, {
+		transformHtml: () =>
+			'<!doctype html><script type="module" src="/define.js"></script><form><list-filter for="canceled-list" search></list-filter></form><ul id="canceled-list"><li>First</li><li>Second</li></ul>',
+	});
+	await page.goto('http://code-demo.test/demo/index.html');
+	const filter = page.locator('list-filter');
+	await expect(filter.locator('output')).toHaveText('2 items');
+	await page.clock.install();
+	await filter.getByRole('searchbox').fill('Second');
+	await filter.evaluate((element) => {
+		element.updates = [];
+		element.addEventListener('list-filter:change', ({ detail }) =>
+			element.updates.push(detail),
+		);
+		const form = element.closest('form');
+		form.addEventListener('reset', (event) => event.preventDefault(), {
+			once: true,
+		});
+		form.reset();
+	});
+	await page.clock.runFor(1);
+	await expect(filter.getByRole('searchbox')).toHaveValue('Second');
+	await expect(filter.locator('output')).toHaveText('1 item');
+	expect(await filter.evaluate((element) => element.updates)).toEqual([]);
+	const handle = await filter.elementHandle();
+	await filter.evaluate((element) => {
+		element.closest('form').reset();
+		element.remove();
+	});
+	await page.clock.runFor(350);
+	expect(await handle.evaluate((element) => element.updates)).toEqual([]);
+	await handle.dispose();
+	await expect(page.locator('#canceled-list > li:visible')).toHaveCount(2);
+	expect(errors).toEqual([]);
+});
+
 for (const scenario of [
 	{ initialized: false, action: 'reset' },
 	{ initialized: true, action: 'reset' },

@@ -71,6 +71,11 @@ By default, the component generates a fieldset, legend, optional labeled search
 and category fields, a reset button, and an output. Controls wrap in an inline
 flex row, with labels above fields and the button aligned at block-end.
 The reset button has `type="button"` and never resets an enclosing form.
+If an enclosing form resets through its own button or `form.reset()`, filtering
+and counts update after the browser restores the controls' default values.
+Authored controls with an explicit `form` attribute follow that form's resets.
+Canceled and unrelated form resets are ignored. This emits a change event with
+`reason: 'reset'` without clearing authored defaults or resetting any other fields.
 
 | Attribute                 | Default              | Purpose                                    |
 | ------------------------- | -------------------- | ------------------------------------------ |

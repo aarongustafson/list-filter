@@ -33,10 +33,41 @@ export class ListFilterElement extends HTMLElement {
 		this._list = null;
 		this._scheduled = false;
 		this._timer = null;
+		this._resetRoot = null;
+		this._formResetTimer = null;
+		this._formResets = [];
 		this._focusCleanup = null;
 		this._onSearch = () => this._apply('search');
 		this._onCategory = () => this._apply('category');
 		this._onReset = () => this.reset();
+		this._onFormReset = (event) => {
+			if (!this._usesForm(event.target)) return;
+			this._formResets.push(event);
+			if (this._formResetTimer !== null) return;
+			// Native reset values are restored after reset event dispatch.
+			this._formResetTimer = setTimeout(() => {
+				this._formResetTimer = null;
+				const events = this._formResets;
+				this._formResets = [];
+				if (
+					events.some(
+						(event) =>
+							!event.defaultPrevented &&
+							this._usesForm(event.target),
+					)
+				)
+					this._apply('reset');
+			}, 0);
+		};
+	}
+
+	_usesForm(form) {
+		return (
+			this.isConnected &&
+			[this._ui?.search, this._ui?.categories, this._ui?.output].some(
+				(control) => control && control.form === form,
+			)
+		);
 	}
 
 	get htmlFor() {
@@ -316,6 +347,8 @@ export class ListFilterElement extends HTMLElement {
 			appliedUI.search?.addEventListener('input', this._onSearch);
 			appliedUI.categories?.addEventListener('change', this._onCategory);
 			appliedUI.reset.addEventListener('click', this._onReset);
+			this._resetRoot = root;
+			root.addEventListener('reset', this._onFormReset, true);
 			const setupUpdate = this._update;
 			this.append(appliedUI.wrapper);
 			if (
@@ -554,6 +587,11 @@ export class ListFilterElement extends HTMLElement {
 
 	_cleanup() {
 		this._update = null;
+		this._resetRoot?.removeEventListener('reset', this._onFormReset, true);
+		this._resetRoot = null;
+		clearTimeout(this._formResetTimer);
+		this._formResetTimer = null;
+		this._formResets = [];
 		this._focusCleanup?.();
 		clearTimeout(this._timer);
 		this._timer = null;

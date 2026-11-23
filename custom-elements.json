@@ -54,7 +54,7 @@
 							"type": {
 								"text": "CustomEvent<ListFilterChangeDetail>"
 							},
-							"description": "Bubbles and is composed. Detail: reason (init, refresh, search, category, reset), search, category, shown, total. Counts exclude authored hidden items."
+							"description": "Bubbles and is composed. Detail: reason (init, refresh, search, category, reset), search, category, shown, total. Counts exclude authored hidden items. Reset includes synchronization after an uncanceled native reset of a control's owning form, using the browser-restored default values."
 						},
 						{
 							"name": "list-filter:error",
