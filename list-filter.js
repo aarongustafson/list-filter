@@ -128,6 +128,7 @@ export class ListFilterElement extends HTMLElement {
 	}
 
 	_recoverFocus(preferred) {
+		const ui = this._ui;
 		for (const control of [
 			preferred,
 			this._ui.search,
@@ -136,6 +137,7 @@ export class ListFilterElement extends HTMLElement {
 		]) {
 			if (!control || control.matches(':disabled')) continue;
 			control.focus();
+			if (!this.isConnected || this._ui !== ui) return;
 			if (this.getRootNode().activeElement === control) return;
 		}
 		this._focusList();
@@ -473,6 +475,7 @@ export class ListFilterElement extends HTMLElement {
 	}
 
 	_apply(reason) {
+		const ui = this._ui;
 		const search = this._ui.search?.value ?? '';
 		const category = this._ui.categories?.value ?? '';
 		const needle = search.toLowerCase();
@@ -491,6 +494,7 @@ export class ListFilterElement extends HTMLElement {
 			if (matches) shown++;
 			if (!matches && node.contains(this.getRootNode().activeElement)) {
 				this._recoverFocus();
+				if (!this.isConnected || this._ui !== ui) return;
 			}
 			if (matches && node.hasAttribute('hidden'))
 				node.removeAttribute('hidden');

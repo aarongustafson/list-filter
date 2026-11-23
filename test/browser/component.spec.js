@@ -5,6 +5,62 @@ import {
 	expectNativeFocus,
 } from './demo-fixture.js';
 
+for (const event of ['focus', 'blur']) {
+	for (const action of ['remove', 'rebuild']) {
+		test(`stops stale filtering when a ${event} listener causes ${action} during focus recovery`, async ({
+			page,
+		}) => {
+			const errors = [];
+			page.on('pageerror', (error) => errors.push(error.message));
+			await serveDemo(page);
+			await page.goto('http://code-demo.test/demo/index.html');
+			const result = await page
+				.locator('list-filter[for="reading"]')
+				.evaluate(
+					(element, { event, action }) => {
+						const link = document.querySelector('#reading a');
+						link.focus();
+						const input = element.querySelector('input');
+						const target = event === 'focus' ? input : link;
+						target.addEventListener(
+							event,
+							() => {
+								if (action === 'remove') element.remove();
+								else {
+									element.setAttribute(
+										'search-label',
+										'New search',
+									);
+									element.querySelector('input').value = '';
+									element.refresh();
+								}
+							},
+							{ once: true },
+						);
+						input.value = 'HTML forms';
+						input.dispatchEvent(new Event('input'));
+						return {
+							connected: element.isConnected,
+							hidden: [
+								...document.querySelector('#reading').children,
+							].map((item) => item.hidden),
+							output:
+								element.querySelector('output')?.textContent ??
+								null,
+						};
+					},
+					{ event, action },
+				);
+			expect(result).toEqual({
+				connected: action === 'rebuild',
+				hidden: [false, false, false],
+				output: action === 'rebuild' ? '3 items' : null,
+			});
+			expect(errors).toEqual([]);
+		});
+	}
+}
+
 test('inherits plural language through nested shadow hosts and honors local overrides', async ({
 	page,
 }) => {

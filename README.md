@@ -217,7 +217,9 @@ those disabled by an enclosing fieldset, are skipped. If none can receive focus,
 focus moves to the list. Configuration changes rebuild controls and restore
 control focus where possible, using the same fallback for extra focusable template
 content. If an update listener removes or replaces the enhancement, refresh
-does not attempt to focus its discarded controls. Focus recovery also works
+does not attempt to focus its discarded controls. A focus or blur listener that
+removes or rebuilds controls also stops the old filtering update before it can
+change list visibility or overwrite the new count. Focus recovery also works
 when the component and list share an authored shadow-root tree; the component
 itself still uses light DOM. Supply visible empty-state guidance alongside the
 list if the count alone is insufficient.
