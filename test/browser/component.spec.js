@@ -5,6 +5,115 @@ import {
 	expectNativeFocus,
 } from './demo-fixture.js';
 
+for (const scenario of [
+	{ initialized: false, action: 'reset' },
+	{ initialized: true, action: 'reset' },
+	{ initialized: false, action: 'refresh' },
+	{ initialized: true, action: 'refresh' },
+]) {
+	const { initialized, action } = scenario;
+	test(`honors a template child's ${action} during ${initialized ? 'rebuild' : 'initialization'} without incomplete updates`, async ({
+		page,
+	}) => {
+		const errors = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await serveDemo(page, {
+			transformHtml: () =>
+				'<!doctype html><html lang="en"><head><title>Template lifecycle fixture</title><script type="module" src="/define.js"></script></head><body></body></html>',
+		});
+		await page.goto('http://code-demo.test/demo/index.html');
+		const result = await page.evaluate(async ({ initialized, action }) => {
+			await customElements.whenDefined('list-filter');
+			let updateResult;
+			let optionsAtConnection;
+			customElements.define(
+				'reset-filter',
+				class extends HTMLElement {
+					connectedCallback() {
+						const filter = this.closest('list-filter');
+						optionsAtConnection = [
+							...filter.querySelector('select').options,
+						].map((option) => option.value);
+						if (action === 'reset') updateResult = filter.reset();
+						else {
+							filter.querySelector('input').value = 'Second';
+							filter.querySelector('select').value = 'reference';
+							updateResult = filter.refresh();
+						}
+					}
+				},
+			);
+			const list = document.createElement('ul');
+			list.id = 'reset-items';
+			list.innerHTML =
+				'<li data-category="guide">First</li><li data-category="reference">Second</li><li data-category="guide">Third</li><li hidden>Private</li>';
+			const filter = document.createElement('list-filter');
+			filter.setAttribute('for', list.id);
+			filter.setAttribute('search', '');
+			filter.setAttribute('categories', '');
+			filter.lang = 'pl';
+			filter.setAttribute('output-label-few', '{count} few');
+			filter.setAttribute('output-label-other', '{count} other');
+			document.body.append(list);
+			if (initialized) {
+				document.body.append(filter);
+				await new Promise((resolve) => queueMicrotask(resolve));
+				const input = filter.querySelector('input');
+				input.value = 'First';
+				input.dispatchEvent(new Event('input'));
+				const select = filter.querySelector('select');
+				select.value = 'guide';
+				select.dispatchEvent(new Event('change'));
+			}
+			const template = document.createElement('template');
+			template.innerHTML = `
+				<label>Words <input type="search" data-list-filter-ref="search"></label>
+				<label>Category <select data-list-filter-ref="categories"></select></label>
+				<button type="button" data-list-filter-ref="reset">Reset</button>
+				<output data-list-filter-ref="output"></output>
+				<reset-filter></reset-filter>`;
+			filter.append(template);
+			const updates = [];
+			filter.addEventListener('list-filter:change', ({ detail }) =>
+				updates.push(detail),
+			);
+			if (initialized) filter.refresh();
+			else document.body.append(filter);
+			await new Promise((resolve) => queueMicrotask(resolve));
+			return {
+				updateResult,
+				optionsAtConnection,
+				updates,
+				search: filter.querySelector('input').value,
+				category: filter.querySelector('select').value,
+				output: filter.querySelector('output').textContent,
+				hidden: [...list.children].map((item) => item.hidden),
+			};
+		}, scenario);
+		expect(errors).toEqual([]);
+		expect(result).toEqual({
+			updateResult: true,
+			optionsAtConnection: ['', 'guide', 'reference'],
+			updates: [
+				{
+					reason: action,
+					search: action === 'reset' ? '' : 'Second',
+					category: action === 'reset' ? '' : 'reference',
+					shown: action === 'reset' ? 3 : 1,
+					total: 3,
+				},
+			],
+			search: action === 'reset' ? '' : 'Second',
+			category: action === 'reset' ? '' : 'reference',
+			output: action === 'reset' ? '3 few' : '1 item',
+			hidden:
+				action === 'reset'
+					? [false, false, false, true]
+					: [true, false, true, true],
+		});
+	});
+}
+
 for (const initialized of [false, true]) {
 	test(`stops refresh when a template child disconnects the filter during ${initialized ? 'rebuild' : 'initialization'}`, async ({
 		page,

@@ -273,11 +273,6 @@ export class ListFilterElement extends HTMLElement {
 			this._template = template;
 			this._signature = signature;
 			owners.set(list, this);
-			this.append(ui.wrapper);
-			if (!this.isConnected || this._ui !== ui) return true;
-			ui.search?.addEventListener('input', this._onSearch);
-			ui.categories?.addEventListener('change', this._onCategory);
-			ui.reset.addEventListener('click', this._onReset);
 			if (previous && ui.search) ui.search.value = previous.search;
 		}
 		this._plurals = plurals;
@@ -317,6 +312,19 @@ export class ListFilterElement extends HTMLElement {
 				: '';
 		}
 		const appliedUI = this._ui;
+		if (rebuild) {
+			appliedUI.search?.addEventListener('input', this._onSearch);
+			appliedUI.categories?.addEventListener('change', this._onCategory);
+			appliedUI.reset.addEventListener('click', this._onReset);
+			const setupUpdate = this._update;
+			this.append(appliedUI.wrapper);
+			if (
+				!this.isConnected ||
+				this._ui !== appliedUI ||
+				this._update !== setupUpdate
+			)
+				return true;
+		}
 		const appliedUpdate = this._apply(previous ? 'refresh' : 'init');
 		if (
 			restoreFocus &&

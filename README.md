@@ -180,6 +180,10 @@ also work when assigned before definition. Other options use attributes.
   If a template child's connection callback removes the filter during insertion,
   `refresh()` stops without throwing or emitting a change event and returns
   `true`. Disconnection restores the list and releases its owner.
+  List records, category options, labels, and preserved filter values are ready
+  before template children connect. If a child's connection callback calls
+  `reset()` or `refresh()`, that update takes precedence; setup does not restore
+  older values or emit an additional stale update.
 
 `list-filter:change` bubbles and is composed. Each update emits fresh detail:
 
