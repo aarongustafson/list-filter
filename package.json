@@ -1,6 +1,6 @@
 {
 	"name": "@aarongustafson/list-filter",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "Progressively filter native lists with light-DOM search and category controls.",
 	"keywords": [
 		"html",
