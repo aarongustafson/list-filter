@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>&lt;list-filter&gt; Web Component Demo</title>
+		<title>&lt;list-filter&gt; examples</title>
 		<link rel="stylesheet" href="./demo-shell.css" />
 		<link rel="stylesheet" href="./styles.css" />
 	</head>
@@ -13,27 +13,31 @@
 			<p class="eyebrow">Web component / Examples</p>
 			<h1>&lt;list-filter&gt;</h1>
 			<p class="lede">
-				Progressively filter native lists with light-DOM search and category controls. See the
-				<a
-					href="https://github.com/aarongustafson/list-filter/blob/main/README.md"
-					>README</a
-				>
-				for installation and API documentation.
+				Filter ordered (<code>ol</code>), unordered (<code>ul</code>),
+				and grouped definition (<code>dl</code>) lists without replacing
+				their content. Add a search field, a category dropdown, or both.
+				See the <a href="../README.md">README</a> for the full API.
 			</p>
 			<nav aria-label="Component resources">
-				<a
-					href="https://github.com/aarongustafson/list-filter/blob/main/README.md"
-					>Read the README</a
-				>
-				<a href="https://github.com/aarongustafson/list-filter"
-					>View on GitHub</a
-				>
+				<a href="../README.md">Read the README</a>
 				<a href="./esm.html">esm.sh example</a>
 				<a href="./unpkg.html">unpkg example</a>
 			</nav>
 		</header>
-
 		<main id="main" tabindex="-1">
+			<p
+				id="component-status"
+				role="status"
+				data-failure-message="Filter controls could not load. The original lists remain available."
+			>
+				Loading filter controls. The original lists remain available.
+			</p>
+			<noscript
+				><p>
+					JavaScript is off. Browse the original lists below; no items
+					are filtered.
+				</p></noscript
+			>
 			<p
 				id="microlighter-status"
 				class="enhancement-status"
@@ -44,82 +48,377 @@
 				data-theme-failure-message="Code highlighting and Copy controls are available, but the syntax theme could not load. The component loads independently."
 			></p>
 
-			<!-- Basic Example -->
-			<section>
-				<h2>Basic Example</h2>
-				<p>A simple demonstration of the component.</p>
-
-				<div class="demo-section">
-					<h3>Basic Usage</h3>
-					<p>Description of this example.</p>
-					<div class="code-demo-pair">
-						<micro-lighter
-							class="code-panel"
-							language="html"
-							controls="copy"
-							data-label="HTML"
-						>
-							<pre
-								aria-label="Basic Usage code 1"
-								tabindex="0"
-							><code><mark>&lt;list-filter&gt;</mark>
-  &lt;p&gt;Content goes here&lt;/p&gt;
-<mark>&lt;/list-filter&gt;</mark></code></pre>
-						</micro-lighter>
-						<div class="demo" data-demo-label="Live example">
-							<list-filter>
-								<p>Content goes here</p>
-							</list-filter>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- Example with Attributes -->
-			<section>
-				<h2>Example with Attributes</h2>
-				<p>Demonstrating component attributes.</p>
-
-				<div class="demo-section">
-					<h3>Using Attributes</h3>
-					<p>Description of this example with attributes.</p>
-					<div class="code-demo-pair">
-						<micro-lighter
-							class="code-panel"
-							language="html"
-							controls="copy"
-							data-label="HTML"
-						>
-							<pre
-								aria-label="Using Attributes code 2"
-								tabindex="0"
-							><code><mark>&lt;list-filter example-attribute="value"&gt;</mark>
-  &lt;p&gt;Content with attributes&lt;/p&gt;
-<mark>&lt;/list-filter&gt;</mark></code></pre>
-						</micro-lighter>
-						<div class="demo" data-demo-label="Live example">
-							<list-filter example-attribute="value">
-								<p>Content with attributes</p>
-							</list-filter>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- API Reference -->
-			<section class="api-reference">
-				<h2>API Reference</h2>
+			<section class="demo-section">
+				<h2>Search a reading list</h2>
 				<p>
-					For complete documentation of attributes, events, and
-					browser support, see the
-					<a
-						href="https://github.com/aarongustafson/list-filter/blob/main/README.md"
-						>README</a
-					>.
+					Use the <code>for</code> attribute on
+					<code>&lt;list-filter&gt;</code> to reference the list, and
+					add <code>search</code> to enable a labeled search field.
+					Try “CSS” or “progressive”. Matching is case-insensitive and
+					literal. Reset brings back the full list without changing
+					its order.
 				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Reading list code"
+							tabindex="0"
+						><code><mark>&lt;list-filter for="reading" search&gt;&lt;/list-filter&gt;</mark>
+&lt;ol id="reading"&gt;
+  &lt;li&gt;&lt;a href="https://developer.mozilla.org/en-US/docs/Web/CSS"&gt;CSS reference&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Progressive enhancement handbook&lt;/li&gt;
+  &lt;li&gt;HTML forms guide&lt;/li&gt;
+&lt;/ol&gt;</code></pre>
+					</micro-lighter>
+					<div class="demo" data-demo-label="Reading list example">
+						<list-filter for="reading" search></list-filter>
+						<ol id="reading">
+							<li>
+								<a
+									href="https://developer.mozilla.org/en-US/docs/Web/CSS"
+									>CSS reference</a
+								>
+							</li>
+							<li>Progressive enhancement handbook</li>
+							<li>HTML forms guide</li>
+						</ol>
+					</div>
+				</div>
+			</section>
+
+			<section class="demo-section">
+				<h2>Filter by category</h2>
+				<p>
+					Add the <code>categories</code> attribute to show a dropdown
+					without a search field. Give each direct list item a
+					<code>data-category</code> value. The dropdown uses those
+					values as its option labels, with repeated values appearing
+					only once. Choose “cold” or “hot” to filter the drinks;
+					choose “All” to show the full list again.
+				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Category-only drinks code"
+							tabindex="0"
+						><code><mark>&lt;list-filter for="raw-drinks" categories&gt;&lt;/list-filter&gt;</mark>
+&lt;ul id="raw-drinks"&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Sparkling water&lt;/li&gt;
+  &lt;li <mark>data-category="hot"</mark>&gt;Lemon tea&lt;/li&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Lemonade&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+					</micro-lighter>
+					<div
+						class="demo"
+						data-demo-label="Category-only drinks example"
+					>
+						<list-filter for="raw-drinks" categories></list-filter>
+						<ul id="raw-drinks">
+							<li data-category="cold">Sparkling water</li>
+							<li data-category="hot">Lemon tea</li>
+							<li data-category="cold">Lemonade</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<section class="demo-section">
+				<h2>Give category keys readable labels</h2>
+				<p>
+					Use the <code>categories-map</code> attribute when the
+					stored category keys need different display labels. Supply a
+					JSON object mapping each key to its label. This example
+					displays “Cold drinks” and “Hot drinks” but still matches
+					the original <code>cold</code> and <code>hot</code> values
+					in the list. Unmapped values keep their raw labels.
+				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Mapped category drinks code"
+							tabindex="0"
+						><code><mark>&lt;list-filter for="mapped-drinks" categories
+  categories-map='{"cold":"Cold drinks","hot":"Hot drinks"}'&gt;&lt;/list-filter&gt;</mark>
+&lt;ul id="mapped-drinks"&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Sparkling water&lt;/li&gt;
+  &lt;li <mark>data-category="hot"</mark>&gt;Lemon tea&lt;/li&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Lemonade&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+					</micro-lighter>
+					<div
+						class="demo"
+						data-demo-label="Mapped category drinks example"
+					>
+						<list-filter
+							for="mapped-drinks"
+							categories
+							categories-map='{"cold":"Cold drinks","hot":"Hot drinks"}'
+						></list-filter>
+						<ul id="mapped-drinks">
+							<li data-category="cold">Sparkling water</li>
+							<li data-category="hot">Lemon tea</li>
+							<li data-category="cold">Lemonade</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<section class="demo-section">
+				<h2>Combine search and categories</h2>
+				<p>
+					Add both <code>search</code> and <code>categories</code> to
+					offer both controls. An item must match the search term and
+					the selected category to stay visible. Try searching for
+					“lemon” and choosing “Hot drinks”. Choose “All” to clear
+					only the category, or use Reset to clear both filters.
+					Search for “coffee” to try a zero-result state.
+				</p>
+				<p>
+					Customize the legend with <code>title</code>, and use
+					<code>search-placeholder</code> to give a search hint
+					without replacing the field’s label.
+				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Drinks code"
+							tabindex="0"
+						><code><mark>&lt;list-filter for="drinks" search categories
+  title="Find a drink"
+  categories-map='{"cold":"Cold drinks","hot":"Hot drinks"}'
+  search-placeholder="Try lemon"&gt;&lt;/list-filter&gt;</mark>
+&lt;ul id="drinks"&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Sparkling water&lt;/li&gt;
+  &lt;li <mark>data-category="hot"</mark>&gt;Lemon tea&lt;/li&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Lemonade&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+					</micro-lighter>
+					<div class="demo" data-demo-label="Drinks example">
+						<list-filter
+							for="drinks"
+							search
+							categories
+							title="Find a drink"
+							categories-map='{"cold":"Cold drinks","hot":"Hot drinks"}'
+							search-placeholder="Try lemon"
+						></list-filter>
+						<ul id="drinks">
+							<li data-category="cold">Sparkling water</li>
+							<li data-category="hot">Lemon tea</li>
+							<li data-category="cold">Lemonade</li>
+						</ul>
+						<p>
+							Nothing shown? Clear the category, edit the search
+							term, or reset.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<section class="demo-section">
+				<h2>Translate a definition-list filter</h2>
+				<p>
+					Keep each term with its definition by wrapping them in a
+					direct <code>div</code> child of the <code>dl</code>.
+					Override the generated labels to translate the controls, and
+					use <code>output-label</code> with
+					<code>output-label-*</code> variants for translated counts.
+					Set <code>lang</code> to select the language’s plural rules.
+				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="French glossary code"
+							tabindex="0"
+						><code><mark>&lt;list-filter for="glossary" categories lang="fr"
+  title="Filtrer le glossaire"
+  categories-label="Par catégorie"
+  categories-placeholder="Toutes"
+  categories-map='{"html":"HTML","css":"CSS"}'
+  reset-label="Réinitialiser"
+  output-label="{count} termes"
+  output-label-one="{count} terme"&gt;&lt;/list-filter&gt;</mark>
+&lt;dl id="glossary" lang="fr"&gt;
+  &lt;div <mark>data-category="html"</mark>&gt;
+    &lt;dt&gt;Élément&lt;/dt&gt;&lt;dd&gt;Une partie du document HTML.&lt;/dd&gt;
+  &lt;/div&gt;
+  &lt;div <mark>data-category="css"</mark>&gt;
+    &lt;dt&gt;Sélecteur&lt;/dt&gt;&lt;dd&gt;Une règle pour cibler des éléments.&lt;/dd&gt;
+  &lt;/div&gt;
+&lt;/dl&gt;</code></pre>
+					</micro-lighter>
+					<div
+						class="demo"
+						data-demo-label="French glossary example"
+						lang="fr"
+					>
+						<list-filter
+							for="glossary"
+							categories
+							lang="fr"
+							title="Filtrer le glossaire"
+							categories-label="Par catégorie"
+							categories-placeholder="Toutes"
+							categories-map='{"html":"HTML","css":"CSS"}'
+							reset-label="Réinitialiser"
+							output-label="{count} termes"
+							output-label-one="{count} terme"
+						></list-filter>
+						<dl id="glossary">
+							<div data-category="html">
+								<dt>Élément</dt>
+								<dd>Une partie du document HTML.</dd>
+							</div>
+							<div data-category="css">
+								<dt>Sélecteur</dt>
+								<dd>Une règle pour cibler des éléments.</dd>
+							</div>
+						</dl>
+					</div>
+				</div>
+			</section>
+
+			<section class="demo-section">
+				<h2>Supply your own controls</h2>
+				<p>
+					Supply a <code>template</code> as a direct child of
+					<code>&lt;list-filter&gt;</code> to use your own controls.
+					Mark each enabled field, reset button, and output with its
+					<code>data-list-filter-ref</code> value so the component can
+					wire them up. Provide native labels and a legend.
+				</p>
+				<p>
+					The component clones your template into light DOM; the
+					original template stays inert. This example groups the field
+					and button in a wrapping row, with the result count below.
+				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Template code"
+							tabindex="0"
+						><code><mark>&lt;list-filter for="fruit" search&gt;</mark>
+  &lt;template&gt;
+    &lt;fieldset class="fruit-controls"&gt;
+      &lt;legend&gt;Find fruit&lt;/legend&gt;
+      &lt;div class="fruit-fields"&gt;
+        &lt;label&gt;Fruit name
+          &lt;input type="search" <mark>data-list-filter-ref="search"</mark>&gt;
+        &lt;/label&gt;
+        &lt;button type="button" <mark>data-list-filter-ref="reset"</mark>&gt;Clear&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;output <mark>data-list-filter-ref="output"</mark>&gt;&lt;/output&gt;
+    &lt;/fieldset&gt;
+  &lt;/template&gt;
+<mark>&lt;/list-filter&gt;</mark>
+&lt;ul id="fruit"&gt;&lt;li&gt;Apple&lt;/li&gt;&lt;li&gt;Pear&lt;/li&gt;&lt;/ul&gt;</code></pre>
+					</micro-lighter>
+					<div
+						class="demo"
+						data-demo-label="Authored template example"
+					>
+						<list-filter for="fruit" search>
+							<template>
+								<fieldset class="fruit-controls">
+									<legend>Find fruit</legend>
+									<div class="fruit-fields">
+										<label
+											>Fruit name
+											<input
+												type="search"
+												data-list-filter-ref="search"
+										/></label>
+										<button
+											type="button"
+											data-list-filter-ref="reset"
+										>
+											Clear
+										</button>
+									</div>
+									<output
+										data-list-filter-ref="output"
+									></output>
+								</fieldset>
+							</template>
+						</list-filter>
+						<ul id="fruit">
+							<li>Apple</li>
+							<li>Pear</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<section class="demo-section">
+				<h2>Recover from a missing list reference</h2>
+				<p>
+					Give <code>for</code> the ID of an existing list. If that ID
+					is missing, the component leaves the list unfiltered and
+					adds no controls or visible message. Use the button below to
+					correct this example’s reference and enable its filter.
+				</p>
+				<div class="code-demo-pair">
+					<micro-lighter
+						class="code-panel"
+						language="html"
+						controls="copy"
+						data-label="HTML"
+					>
+						<pre
+							aria-label="Recovery code"
+							tabindex="0"
+						><code><mark>&lt;list-filter id="recovery" for="missing-list" search&gt;&lt;/list-filter&gt;</mark>
+&lt;ul id="recovery-list"&gt;
+  &lt;li&gt;Original content stays available.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- Correct the reference to recover: for="recovery-list". --&gt;</code></pre>
+					</micro-lighter>
+					<div class="demo" data-demo-label="Recovery example">
+						<list-filter
+							id="recovery"
+							for="missing-list"
+							search
+						></list-filter>
+						<ul id="recovery-list">
+							<li>Original content stays available.</li>
+						</ul>
+						<button id="repair" type="button">
+							Correct the list reference
+						</button>
+					</div>
+				</div>
 			</section>
 		</main>
-
 		<footer>
 			<p>
 				Made with ❤️ by
@@ -130,8 +429,7 @@
 				>.
 			</p>
 		</footer>
-
-		<script src="../define.js" type="module"></script>
-		<script type="module" src="./code-examples.js"></script>
+		<script src="./examples.js" type="module"></script>
+		<script src="./code-examples.js" type="module"></script>
 	</body>
 </html>

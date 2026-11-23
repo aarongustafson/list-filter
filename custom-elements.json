@@ -8,31 +8,158 @@
 			"declarations": [
 				{
 					"kind": "class",
-					"description": "Progressively filter native lists with light-DOM search and category controls.. Enhances authored light-DOM content without replacing it.",
+					"description": "Light-DOM controls for filtering direct ol/ul li children and dl div children.",
 					"name": "ListFilterElement",
 					"members": [
 						{
 							"kind": "field",
-							"name": "exampleAttribute",
-							"type": { "text": "string | null" },
-							"attribute": "example-attribute",
+							"name": "htmlFor",
+							"type": { "text": "string" },
+							"attribute": "for",
 							"reflects": true,
-							"description": "Example configuration reflected to example-attribute."
+							"description": "Associated list ID reference; empty when absent."
+						},
+						{
+							"kind": "field",
+							"name": "search",
+							"type": { "text": "boolean" },
+							"attribute": "search",
+							"reflects": true,
+							"description": "Enable case-insensitive literal substring search."
+						},
+						{
+							"kind": "field",
+							"name": "categories",
+							"type": { "text": "boolean" },
+							"attribute": "categories",
+							"reflects": true,
+							"description": "Enable exact raw data-category filtering."
 						},
 						{
 							"kind": "method",
-							"name": "render",
-							"description": "Initializes enhancement without replacing authored content.",
-							"return": { "type": { "text": "void" } }
+							"name": "refresh",
+							"description": "Validate configuration, refresh cached list text and category options, and apply filters. Returns false on reported errors.",
+							"return": { "type": { "text": "boolean" } }
+						},
+						{
+							"kind": "method",
+							"name": "reset",
+							"description": "Clear filters without resetting the enclosing form. Returns false when controls are not ready.",
+							"return": { "type": { "text": "boolean" } }
 						}
 					],
-					"events": [],
+					"events": [
+						{
+							"name": "list-filter:change",
+							"type": {
+								"text": "CustomEvent<ListFilterChangeDetail>"
+							},
+							"description": "Bubbles and is composed. Detail: reason (init, refresh, search, category, reset), search, category, shown, total. Counts exclude authored hidden items. Reset includes synchronization after an uncanceled native reset of a control's owning form, using the browser-restored default values."
+						},
+						{
+							"name": "list-filter:error",
+							"type": {
+								"text": "CustomEvent<ListFilterErrorDetail>"
+							},
+							"description": "Bubbles and is composed. Detail: code and message. Also logs to console.error and restores component-owned list visibility."
+						}
+					],
 					"attributes": [
 						{
-							"name": "example-attribute",
-							"fieldName": "exampleAttribute",
+							"name": "for",
+							"fieldName": "htmlFor",
 							"type": { "text": "string" },
-							"description": "Example configuration; absent by default."
+							"description": "Required list ID reference in the same tree."
+						},
+						{
+							"name": "search",
+							"fieldName": "search",
+							"type": { "text": "boolean" },
+							"description": "Presence enables search. Only the empty attribute value is supported."
+						},
+						{
+							"name": "categories",
+							"fieldName": "categories",
+							"type": { "text": "boolean" },
+							"description": "Presence enables categories."
+						},
+						{
+							"name": "title",
+							"default": "\"Filter this list\"",
+							"description": "Generated fieldset legend."
+						},
+						{
+							"name": "search-label",
+							"default": "\"By search term\"",
+							"description": "Generated search label."
+						},
+						{
+							"name": "search-placeholder",
+							"description": "Optional generated search placeholder."
+						},
+						{
+							"name": "categories-label",
+							"default": "\"By category\"",
+							"description": "Generated select label."
+						},
+						{
+							"name": "categories-placeholder",
+							"default": "\"All\"",
+							"description": "Selectable no-category-filter option label."
+						},
+						{
+							"name": "categories-map",
+							"description": "JSON object mapping raw category values to string option labels; unmapped values use raw labels."
+						},
+						{
+							"name": "reset-label",
+							"default": "\"Reset filters\"",
+							"description": "Generated reset button label."
+						},
+						{
+							"name": "output-label",
+							"default": "\"{count} items\"",
+							"description": "Base count template; built-in singular is {count} item when no base override is supplied."
+						},
+						{
+							"name": "output-label-zero",
+							"description": "zero plural template containing {count}; falls back to output-label."
+						},
+						{
+							"name": "output-label-one",
+							"description": "one plural template containing {count}; falls back to output-label."
+						},
+						{
+							"name": "output-label-two",
+							"description": "two plural template containing {count}; falls back to output-label."
+						},
+						{
+							"name": "output-label-few",
+							"description": "few plural template containing {count}; falls back to output-label."
+						},
+						{
+							"name": "output-label-many",
+							"description": "many plural template containing {count}; falls back to output-label."
+						},
+						{
+							"name": "output-label-other",
+							"description": "other plural template containing {count}; falls back to output-label."
+						},
+						{
+							"name": "announce",
+							"default": "\"polite\"",
+							"description": "polite or off. Uses a separate status region and delays typing announcements by 300ms."
+						},
+						{
+							"name": "lang",
+							"description": "Native inherited language for Intl.PluralRules; refresh after ancestor language changes."
+						}
+					],
+					"cssProperties": [
+						{
+							"name": "--list-filter-gap",
+							"default": "1rem",
+							"description": "Gap between generated flex control blocks."
 						}
 					],
 					"superclass": {
@@ -59,13 +186,13 @@
 			"declarations": [
 				{
 					"kind": "function",
-					"name": "defineComponentName",
+					"name": "defineListFilter",
 					"description": "Registers the component when a browser registry is available. Called automatically when this module is imported.",
 					"parameters": [
 						{
 							"name": "tagName",
 							"type": { "text": "string" },
-							"default": "'list-filter'.toLowerCase()"
+							"default": "'list-filter'"
 						}
 					],
 					"return": { "type": { "text": "boolean" } }
@@ -74,9 +201,9 @@
 			"exports": [
 				{
 					"kind": "js",
-					"name": "defineComponentName",
+					"name": "defineListFilter",
 					"declaration": {
-						"name": "defineComponentName",
+						"name": "defineListFilter",
 						"module": "define.js"
 					}
 				},

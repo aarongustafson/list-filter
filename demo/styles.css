@@ -1,1 +1,37 @@
-/* Component-specific examples only. See README.md before adding styles. */
+.demo list-filter :is(input[type='search'], select, button[type='button']) {
+	box-sizing: border-box;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	padding: 0.25rem 0.5rem;
+	font: inherit;
+	font-size: 1rem;
+	font-weight: normal;
+	line-height: 1.4;
+	min-block-size: calc(1.4em + 0.5rem + 2px);
+}
+
+.demo list-filter select {
+	/* Native selects ignore line-height; match the other controls' border box. */
+	block-size: calc(1.4em + 0.5rem + 2px);
+}
+
+.fruit-fields {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: 1rem;
+	min-inline-size: 0;
+}
+
+.fruit-controls label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-inline-size: 0;
+	margin: 0;
+}
+
+.fruit-controls input {
+	max-inline-size: 100%;
+	box-sizing: border-box;
+}

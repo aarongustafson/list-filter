@@ -32,6 +32,7 @@
 			"import": "./list-filter.js"
 		},
 		"./define.js": {
+			"types": "./define.d.ts",
 			"import": "./define.js"
 		},
 		"./custom-elements.json": "./custom-elements.json"
@@ -40,6 +41,7 @@
 		"list-filter.js",
 		"list-filter.d.ts",
 		"define.js",
+		"define.d.ts",
 		"index.js",
 		"custom-elements.json",
 		"README.md",
@@ -63,7 +65,8 @@
 		"lint:prettier": "prettier \"**/*.{js,ts,html,css,md,json}\" --check --ignore-path .gitignore",
 		"format:prettier": "prettier \"**/*.{js,ts,html,css,md,json}\" --write --ignore-path .gitignore",
 		"version": "node scripts/update-demo-versions.js && git add demo/esm.html",
-		"postversion": "git push --follow-tags"
+		"postversion": "git push --follow-tags",
+		"test:types": "tsc --noEmit --strict --lib ES2022,DOM --module NodeNext --moduleResolution NodeNext test/types.ts && tsc --noEmit --strict --lib ES2022,DOM --module NodeNext --moduleResolution NodeNext test/types-registration.ts"
 	},
 	"devDependencies": {
 		"@open-wc/eslint-config": "^13.1.0",
@@ -76,9 +79,10 @@
 		"eslint-config-prettier": "^10.1.8",
 		"happy-dom": "^21.0.4",
 		"marked": "18.1.0",
+		"microlighter": "2.2.0",
 		"prettier": "^3.9.9",
-		"vitest": "^5.0.5",
-		"microlighter": "2.2.0"
+		"typescript": "7.0.2",
+		"vitest": "^5.0.5"
 	},
 	"publishConfig": {
 		"access": "public"

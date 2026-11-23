@@ -13,7 +13,10 @@
 			<h1>unpkg CDN sanity check</h1>
 			<p>
 				This page loads the guarded definition helper from
-				<code>unpkg</code> and registers the element when supported.
+				<code>unpkg</code> and registers the element when supported. The
+				package is not published yet; until then, the original list
+				remains available without filter controls.
+				<a href="../README.md">Read the README</a>.
 			</p>
 		</header>
 		<main id="main" tabindex="-1">
@@ -40,22 +43,23 @@
 							aria-label="Import and call the registration helper code 1"
 							tabindex="0"
 						><code>&lt;script type="module"&gt;
-  <mark>import { defineComponentName } from
+  <mark>import { defineListFilter } from
     'https://unpkg.com/@aarongustafson/list-filter@latest/define.js?module';</mark>
-  <mark>defineComponentName();</mark>
+  <mark>defineListFilter();</mark>
 &lt;/script&gt;
 
-<mark>&lt;list-filter&gt;</mark>
-  &lt;p&gt;Replace this markup once you customize list-filter.&lt;/p&gt;
-<mark>&lt;/list-filter&gt;</mark></code></pre>
+<mark>&lt;list-filter for="drinks" categories&gt;&lt;/list-filter&gt;</mark>
+&lt;ul id="drinks"&gt;
+  &lt;li <mark>data-category="hot"</mark>&gt;Lemon tea&lt;/li&gt;
+  &lt;li <mark>data-category="cold"</mark>&gt;Sparkling water&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
 					</micro-lighter>
 					<div class="demo" data-demo-label="Live example">
-						<list-filter>
-							<p>
-								Replace this markup once you customize
-								list-filter.
-							</p>
-						</list-filter>
+						<list-filter for="drinks" categories></list-filter>
+						<ul id="drinks">
+							<li data-category="hot">Lemon tea</li>
+							<li data-category="cold">Sparkling water</li>
+						</ul>
 					</div>
 				</div>
 			</section>
@@ -68,9 +72,9 @@
 		</footer>
 
 		<script type="module">
-			import { defineComponentName } from 'https://unpkg.com/@aarongustafson/list-filter@latest/define.js?module';
+			import { defineListFilter } from 'https://unpkg.com/@aarongustafson/list-filter@latest/define.js?module';
 
-			defineComponentName();
+			defineListFilter();
 		</script>
 		<script type="module" src="./code-examples.js"></script>
 	</body>

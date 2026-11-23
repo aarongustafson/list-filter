@@ -1,6 +1,6 @@
 import { ListFilterElement } from './list-filter.js';
 
-export function defineComponentName(tagName = 'list-filter'.toLowerCase()) {
+export function defineListFilter(tagName = 'list-filter') {
 	const hasWindow = typeof window !== 'undefined';
 	const registry = hasWindow ? window.customElements : undefined;
 
@@ -15,4 +15,4 @@ export function defineComponentName(tagName = 'list-filter'.toLowerCase()) {
 	return true;
 }
 
-defineComponentName();
+defineListFilter();
