@@ -37,6 +37,29 @@ afterEach(() => {
 });
 
 describe('list-filter', () => {
+	it('refreshes category option order after list reordering while preserving the selection', async () => {
+		const element = await mount();
+		const select = element.querySelector('select');
+		expect([...select.options].map((option) => option.value)).toEqual([
+			'',
+			'drink',
+			'food',
+		]);
+		select.value = 'drink';
+		select.dispatchEvent(new Event('change'));
+		const list = document.getElementById('items');
+		list.prepend(list.querySelector('[data-category="food"]'));
+
+		expect(element.refresh()).toBe(true);
+		expect([...select.options].map((option) => option.value)).toEqual([
+			'',
+			'food',
+			'drink',
+		]);
+		expect(select.value).toBe('drink');
+		expect(element.querySelector('output').textContent).toBe('2 items');
+	});
+
 	it('completes refresh when its change listener removes the rebuilt component', async () => {
 		const element = await mount();
 		search(element, 'cake');

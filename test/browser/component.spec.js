@@ -6,6 +6,86 @@ import {
 } from './demo-fixture.js';
 
 for (const event of ['focus', 'blur']) {
+	for (const action of ['reset', 'refresh']) {
+		test(`preserves the newer result when a ${event} listener calls ${action} without replacing controls`, async ({
+			page,
+		}) => {
+			await serveDemo(page);
+			await page.goto('http://code-demo.test/demo/index.html');
+			await page.clock.install();
+			const result = await page
+				.locator('list-filter[for="reading"]')
+				.evaluate(
+					(element, { event, action }) => {
+						const link = document.querySelector('#reading a');
+						link.focus();
+						const input = element.querySelector('input');
+						const updates = [];
+						element.addEventListener(
+							'list-filter:change',
+							({ detail }) => {
+								updates.push(detail);
+							},
+						);
+						const target = event === 'focus' ? input : link;
+						target.addEventListener(
+							event,
+							() => {
+								if (action === 'reset') element.reset();
+								else {
+									input.value = 'CSS';
+									element.refresh();
+								}
+							},
+							{ once: true },
+						);
+						input.value = 'HTML forms';
+						input.dispatchEvent(new Event('input'));
+						return {
+							sameInput: input === element.querySelector('input'),
+							search: input.value,
+							shown: [
+								...document.querySelector('#reading').children,
+							]
+								.filter((item) => !item.hidden)
+								.map((item) => item.textContent.trim()),
+							output: element.querySelector('output').textContent,
+							update: updates.at(-1),
+						};
+					},
+					{ event, action },
+				);
+			expect(result).toEqual({
+				sameInput: true,
+				search: action === 'reset' ? '' : 'CSS',
+				shown:
+					action === 'reset'
+						? [
+								'CSS reference',
+								'Progressive enhancement handbook',
+								'HTML forms guide',
+							]
+						: ['CSS reference'],
+				output: action === 'reset' ? '3 items' : '1 item',
+				update: {
+					reason: action,
+					search: action === 'reset' ? '' : 'CSS',
+					category: '',
+					shown: action === 'reset' ? 3 : 1,
+					total: 3,
+				},
+			});
+			await page.clock.runFor(350);
+			await expect(
+				page.locator(
+					'list-filter[for="reading"] [data-list-filter-ref="status"]',
+				),
+			).toHaveText(action === 'reset' ? '3 items' : '1 item');
+		});
+	}
+}
+
+for (const event of ['focus', 'blur']) {
 	for (const action of ['remove', 'rebuild']) {
 		test(`stops stale filtering when a ${event} listener causes ${action} during focus recovery`, async ({
 			page,

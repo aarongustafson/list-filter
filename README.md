@@ -168,7 +168,8 @@ for authored control names remains the author's responsibility.
 also work when assigned before definition. Other options use attributes.
 
 - `refresh(): boolean` validates configuration, rescans current list text and
-  categories, and reapplies active filters. Call it after structural, text,
+  categories, updates category options to the list's current first-occurrence
+  order, and reapplies active filters. Call it after structural, text,
   `data-category`, template-content, or inherited-language changes. There is no
   MutationObserver. Existing controls and focus are preserved when configuration
   and template identity have not changed. Call while connected.
@@ -219,7 +220,9 @@ control focus where possible, using the same fallback for extra focusable templa
 content. If an update listener removes or replaces the enhancement, refresh
 does not attempt to focus its discarded controls. A focus or blur listener that
 removes or rebuilds controls also stops the old filtering update before it can
-change list visibility or overwrite the new count. Focus recovery also works
+change list visibility or overwrite the new count. If the listener calls
+`reset()` or `refresh()` without replacing controls, the newer update takes
+precedence for visibility, counts, events, and announcements. Focus recovery also works
 when the component and list share an authored shadow-root tree; the component
 itself still uses light DOM. Supply visible empty-state guidance alongside the
 list if the count alone is insufficient.

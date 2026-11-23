@@ -129,6 +129,7 @@ export class ListFilterElement extends HTMLElement {
 
 	_recoverFocus(preferred) {
 		const ui = this._ui;
+		const update = this._update;
 		for (const control of [
 			preferred,
 			this._ui.search,
@@ -137,7 +138,8 @@ export class ListFilterElement extends HTMLElement {
 		]) {
 			if (!control || control.matches(':disabled')) continue;
 			control.focus();
-			if (!this.isConnected || this._ui !== ui) return;
+			if (!this.isConnected || this._ui !== ui || this._update !== update)
+				return;
 			if (this.getRootNode().activeElement === control) return;
 		}
 		this._focusList();
@@ -314,12 +316,13 @@ export class ListFilterElement extends HTMLElement {
 				: '';
 		}
 		const appliedUI = this._ui;
-		this._apply(previous ? 'refresh' : 'init');
+		const appliedUpdate = this._apply(previous ? 'refresh' : 'init');
 		if (
 			restoreFocus &&
 			rebuild &&
 			this.isConnected &&
-			this._ui === appliedUI
+			this._ui === appliedUI &&
+			this._update === appliedUpdate
 		) {
 			this._recoverFocus(appliedUI[focusedRef]);
 		}
@@ -439,10 +442,10 @@ export class ListFilterElement extends HTMLElement {
 		const children = new Set(
 			[...this._list.children].filter((child) => child.tagName === tag),
 		);
+		const items = new Map();
 		for (const [node, record] of this._items) {
 			if (!children.has(node)) {
 				restoreHidden(node, record);
-				this._items.delete(node);
 			}
 		}
 		for (const node of children) {
@@ -452,14 +455,15 @@ export class ListFilterElement extends HTMLElement {
 					original: node.getAttribute('hidden'),
 					current: node.getAttribute('hidden'),
 				};
-				this._items.set(node, record);
 			} else if (node.getAttribute('hidden') !== record.current) {
 				record.original = node.getAttribute('hidden');
 			}
 			record.current = node.getAttribute('hidden');
 			record.text = node.textContent.toLowerCase();
 			record.category = node.getAttribute('data-category');
+			items.set(node, record);
 		}
+		this._items = items;
 	}
 
 	reset() {
@@ -476,6 +480,8 @@ export class ListFilterElement extends HTMLElement {
 
 	_apply(reason) {
 		const ui = this._ui;
+		const update = Symbol();
+		this._update = update;
 		const search = this._ui.search?.value ?? '';
 		const category = this._ui.categories?.value ?? '';
 		const needle = search.toLowerCase();
@@ -494,7 +500,12 @@ export class ListFilterElement extends HTMLElement {
 			if (matches) shown++;
 			if (!matches && node.contains(this.getRootNode().activeElement)) {
 				this._recoverFocus();
-				if (!this.isConnected || this._ui !== ui) return;
+				if (
+					!this.isConnected ||
+					this._ui !== ui ||
+					this._update !== update
+				)
+					return;
 			}
 			if (matches && node.hasAttribute('hidden'))
 				node.removeAttribute('hidden');
@@ -529,9 +540,11 @@ export class ListFilterElement extends HTMLElement {
 				detail: { reason, search, category, shown, total },
 			}),
 		);
+		return update;
 	}
 
 	_cleanup() {
+		this._update = null;
 		this._focusCleanup?.();
 		clearTimeout(this._timer);
 		this._timer = null;
