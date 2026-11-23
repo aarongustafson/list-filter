@@ -32,6 +32,9 @@ jobs:
             - name: Run linter
               run: npm run lint
 
+            - name: Check TypeScript contracts
+              run: npm run test:types
+
             - name: Run tests
               run: npm run test:run
 
