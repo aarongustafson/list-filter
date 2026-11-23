@@ -5,6 +5,100 @@ import {
 	expectNativeFocus,
 } from './demo-fixture.js';
 
+test('recovers list and control focus within a shadow-root tree', async ({
+	page,
+}) => {
+	await serveDemo(page);
+	await page.goto('http://code-demo.test/demo/index.html');
+	await page.evaluate(() => {
+		const host = document.createElement('div');
+		host.id = 'shadow-fixture';
+		const root = host.attachShadow({ mode: 'open' });
+		root.innerHTML = `<list-filter for="shadow-items" search></list-filter>
+			<ul id="shadow-items"><li><a href="#detail">Apple</a></li><li>Pear</li></ul>`;
+		document.body.append(host);
+	});
+	const fixture = page.locator('#shadow-fixture');
+	const filter = fixture.locator('list-filter');
+	await fixture.getByRole('link', { name: 'Apple' }).focus();
+	await filter.evaluate((element) => {
+		const input = element.querySelector('input');
+		input.value = 'pear';
+		input.dispatchEvent(new Event('input'));
+	});
+	await expect(filter.getByRole('searchbox')).toBeFocused();
+	await filter.evaluate((element) => {
+		element.setAttribute('search-label', 'Fruit');
+	});
+	await expect(
+		filter.getByRole('searchbox', { name: 'Fruit' }),
+	).toBeFocused();
+	await filter.evaluate((element) => {
+		element.htmlFor = 'missing';
+	});
+	await expect(fixture.locator('#shadow-items')).toBeFocused();
+});
+
+for (const disabling of ['input', 'fieldset', 'all']) {
+	test(`skips ${disabling}-disabled template controls during focus recovery`, async ({
+		page,
+	}) => {
+		await serveDemo(page);
+		await page.goto('http://code-demo.test/demo/index.html');
+		await page.evaluate((mode) => {
+			const fixture = document.createElement('div');
+			fixture.id = 'disabled-fixture';
+			fixture.innerHTML = `<list-filter for="disabled-items" search categories>
+				<template>
+					<fieldset ${mode !== 'input' ? 'disabled' : ''}>
+						<label>Fruit <input type="search" data-list-filter-ref="search" ${mode === 'input' ? 'disabled' : ''}></label>
+					</fieldset>
+					<label>Category <select data-list-filter-ref="categories" ${mode === 'all' ? 'disabled' : ''}></select></label>
+					<button type="button" data-list-filter-ref="reset" ${mode === 'all' ? 'disabled' : ''}>Clear</button>
+					<output data-list-filter-ref="output"></output>
+				</template>
+			</list-filter>
+			<ul id="disabled-items"><li data-category="fruit"><a href="#detail">Apple</a></li><li data-category="fruit">Pear</li></ul>`;
+			document.body.append(fixture);
+		}, disabling);
+		const fixture = page.locator('#disabled-fixture');
+		const filter = fixture.locator('list-filter');
+		await expect(filter.getByRole('searchbox')).toBeVisible();
+		await fixture.getByRole('link', { name: 'Apple' }).focus();
+		await filter.evaluate((element) => {
+			const input = element.querySelector('input');
+			input.value = 'pear';
+			input.dispatchEvent(new Event('input'));
+		});
+		const target =
+			disabling === 'all'
+				? fixture.locator('#disabled-items')
+				: filter.getByRole('combobox');
+		await expect(target).toBeFocused();
+		await expect(
+			fixture.getByRole('link', { name: 'Apple', includeHidden: true }),
+		).toBeHidden();
+		if (disabling === 'all') {
+			await expect(target).toHaveAttribute('tabindex', '-1');
+			await page
+				.locator('list-filter[for="reading"]')
+				.getByRole('searchbox')
+				.focus();
+			await expect(target).not.toHaveAttribute('tabindex');
+		} else {
+			await filter.evaluate((element) => {
+				element
+					.querySelector('template')
+					.content.querySelector('select').disabled = true;
+				element.refresh();
+			});
+			await expect(
+				filter.getByRole('button', { name: 'Clear' }),
+			).toBeFocused();
+		}
+	});
+}
+
 test('supports native keyboard filtering, reset, and template controls', async ({
 	page,
 }) => {

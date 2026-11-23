@@ -210,9 +210,13 @@ browser/screen-reader verification; automated tests do not establish conformance
 
 Native controls retain keyboard behavior and labels. Filtering does not normally
 move focus. If an item containing focus is hidden, focus moves to the first
-enabled filter control, or reset. Configuration changes rebuild controls and
-restore control focus where possible. Supply visible empty-state guidance
-alongside the list if the count alone is insufficient.
+usable control in search, category, reset order. Disabled controls, including
+those disabled by an enclosing fieldset, are skipped. If none can receive focus,
+focus moves to the list. Configuration changes rebuild controls and restore
+control focus where possible, using the same fallback. Focus recovery also works
+when the component and list share an authored shadow-root tree; the component
+itself still uses light DOM. Supply visible empty-state guidance alongside the
+list if the count alone is insufficient.
 If invalid configuration removes a focused control, focus returns to the original
 list when it is still connected, without changing its authored tab order. A list
 without `tabindex` receives `tabindex="-1"` until focus leaves or the component

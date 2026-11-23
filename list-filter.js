@@ -95,24 +95,10 @@ export class ListFilterElement extends HTMLElement {
 	_error(code, message) {
 		const list = this._list;
 		const restoreFocus = this._ui?.wrapper.contains(
-			this.ownerDocument.activeElement,
+			this.getRootNode().activeElement,
 		);
 		this._cleanup();
-		if (restoreFocus && list?.isConnected) {
-			const tabindex = list.getAttribute('tabindex');
-			if (tabindex === null) {
-				list.setAttribute('tabindex', '-1');
-				const restore = () => {
-					this._focusCleanup = null;
-					list.removeEventListener('blur', restore);
-					if (list.getAttribute('tabindex') === '-1')
-						list.removeAttribute('tabindex');
-				};
-				list.addEventListener('blur', restore);
-				this._focusCleanup = restore;
-			}
-			list.focus({ preventScroll: true });
-		}
+		if (restoreFocus) this._focusList(list);
 		console.error(`[list-filter] ${message}`);
 		this.dispatchEvent(
 			new CustomEvent('list-filter:error', {
@@ -122,6 +108,37 @@ export class ListFilterElement extends HTMLElement {
 			}),
 		);
 		return false;
+	}
+
+	_focusList(list = this._list) {
+		if (!list?.isConnected) return;
+		this._focusCleanup?.();
+		if (!list.hasAttribute('tabindex')) {
+			list.setAttribute('tabindex', '-1');
+			const restore = () => {
+				this._focusCleanup = null;
+				list.removeEventListener('blur', restore);
+				if (list.getAttribute('tabindex') === '-1')
+					list.removeAttribute('tabindex');
+			};
+			list.addEventListener('blur', restore);
+			this._focusCleanup = restore;
+		}
+		list.focus({ preventScroll: true });
+	}
+
+	_recoverFocus(preferred) {
+		for (const control of [
+			preferred,
+			this._ui.search,
+			this._ui.categories,
+			this._ui.reset,
+		]) {
+			if (!control || control.matches(':disabled')) continue;
+			control.focus();
+			if (this.getRootNode().activeElement === control) return;
+		}
+		this._focusList();
 	}
 
 	refresh() {
@@ -233,7 +250,7 @@ export class ListFilterElement extends HTMLElement {
 		const focusedRef =
 			this._ui &&
 			Object.entries(this._ui).find(
-				([, node]) => node === this.ownerDocument.activeElement,
+				([, node]) => node === root.activeElement,
 			)?.[0];
 		if (rebuild) {
 			const ui = this._createUI(template);
@@ -288,12 +305,7 @@ export class ListFilterElement extends HTMLElement {
 		}
 		this._apply(previous ? 'refresh' : 'init');
 		if (focusedRef && rebuild) {
-			(
-				this._ui[focusedRef] ??
-				this._ui.search ??
-				this._ui.categories ??
-				this._ui.reset
-			).focus();
+			this._recoverFocus(this._ui[focusedRef]);
 		}
 		return true;
 	}
@@ -455,6 +467,7 @@ export class ListFilterElement extends HTMLElement {
 		for (const [node, record] of this._items) {
 			if (node.getAttribute('hidden') !== record.current) {
 				record.original = node.getAttribute('hidden');
+				record.current = record.original;
 			}
 			if (record.original !== null) continue;
 			total++;
@@ -462,12 +475,8 @@ export class ListFilterElement extends HTMLElement {
 				record.text.includes(needle) &&
 				(!category || record.category === category);
 			if (matches) shown++;
-			if (!matches && node.contains(this.ownerDocument.activeElement)) {
-				(
-					this._ui.search ??
-					this._ui.categories ??
-					this._ui.reset
-				).focus();
+			if (!matches && node.contains(this.getRootNode().activeElement)) {
+				this._recoverFocus();
 			}
 			if (matches && node.hasAttribute('hidden'))
 				node.removeAttribute('hidden');

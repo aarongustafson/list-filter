@@ -37,6 +37,23 @@ afterEach(() => {
 });
 
 describe('list-filter', () => {
+	it('tracks repeated external hide and unhide cycles without excluding visible items', async () => {
+		const element = await mount();
+		const item = document.querySelector('#items > li');
+		for (let cycle = 0; cycle < 2; cycle++) {
+			item.hidden = true;
+			element.reset();
+			expect(element.querySelector('output').textContent).toBe('2 items');
+			item.hidden = false;
+			element.reset();
+			expect(element.querySelector('output').textContent).toBe('3 items');
+			search(element, 'cake');
+			expect(item.hidden).toBe(true);
+			element.reset();
+			expect(item.hidden).toBe(false);
+		}
+	});
+
 	it.each([
 		['ul', 'li'],
 		['ol', 'li'],
