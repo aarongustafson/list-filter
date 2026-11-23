@@ -32,6 +32,8 @@ For local development, import the checked-out registration module:
 After publication, install `@aarongustafson/list-filter` and import
 `@aarongustafson/list-filter/define.js`. That module registers the element
 automatically and exports the guarded `defineListFilter()` helper.
+Its TypeScript declaration also loads the component's element and event typings;
+you don't need a separate class import to use them.
 
 The package root and `list-filter.js` export only the class. Neither registers
 the element:
